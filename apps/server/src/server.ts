@@ -1,13 +1,9 @@
+import "./config/env";
 import express, { Express, Request, Response } from "express";
 import cors from "cors";
-import dotenv from "dotenv";
-import path from "path";
 import { errorHandler } from "./middlewares/errorHandler";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { profileRoutes } from "./modules/profile/profile.routes";
-
-dotenv.config();
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 const app: Express = express();
 const PORT = process.env.PORT || 5000;

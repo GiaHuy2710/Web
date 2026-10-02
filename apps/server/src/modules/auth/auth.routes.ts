@@ -1,119 +1,49 @@
-import { Router, Request, Response, NextFunction } from "express";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { db } from "@repo/database";
-import { LoginSchema, RegisterSchema, ERROR_CODES } from "@repo/shared";
+import { Router } from "express";
+import { authController } from "./auth.controller";
+import { validateBody } from "../../middlewares/validate.middleware";
+import { authenticateToken } from "../../middlewares/auth.middleware";
+import {
+  LoginSchema,
+  RegisterSchema,
+  ForgotPasswordSchema,
+  ResetPasswordSchema,
+} from "./auth.schema";
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || "default_jwt_secret";
 
-router.post("/register", async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const validatedData = RegisterSchema.parse(req.body);
+// 1. Endpoint Đăng nhập
+router.post(
+  "/login",
+  validateBody(LoginSchema),
+  authController.login
+);
 
-    const existingUser = await db.user.findUnique({
-      where: { email: validatedData.email },
-    });
+// 2. Endpoint Đăng ký
+router.post(
+  "/register",
+  validateBody(RegisterSchema),
+  authController.register
+);
 
-    if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        error: {
-          code: ERROR_CODES.CONFLICT,
-          message: "Email đã tồn tại trong hệ thống",
-        },
-      });
-    }
+// 3. Endpoint Yêu cầu Quên mật khẩu
+router.post(
+  "/forgot-password",
+  validateBody(ForgotPasswordSchema),
+  authController.forgotPassword
+);
 
-    const hashedPassword = await bcrypt.hash(validatedData.password, 10);
-    const user = await db.user.create({
-      data: {
-        email: validatedData.email,
-        password: hashedPassword,
-        fullName: validatedData.fullName,
-        role: validatedData.role,
-        profile: {
-          create: {
-            title: "Software Engineer",
-            skills: ["TypeScript", "React", "Node.js"],
-          },
-        },
-      },
-    });
+// 4. Endpoint Đặt lại mật khẩu mới
+router.post(
+  "/reset-password",
+  validateBody(ResetPasswordSchema),
+  authController.resetPassword
+);
 
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
-      expiresIn: "7d",
-    });
-
-    return res.status(201).json({
-      success: true,
-      message: "Đăng ký tài khoản thành công",
-      data: {
-        token,
-        user: {
-          id: user.id,
-          email: user.email,
-          fullName: user.fullName,
-          role: user.role,
-          avatarUrl: user.avatarUrl,
-        },
-      },
-    });
-  } catch (error) {
-    return next(error);
-  }
-});
-
-router.post("/login", async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const validatedData = LoginSchema.parse(req.body);
-
-    const user = await db.user.findUnique({
-      where: { email: validatedData.email },
-    });
-
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          code: ERROR_CODES.UNAUTHORIZED,
-          message: "Email hoặc mật khẩu không chính xác",
-        },
-      });
-    }
-
-    const isValidPassword = await bcrypt.compare(validatedData.password, user.password);
-    if (!isValidPassword) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          code: ERROR_CODES.UNAUTHORIZED,
-          message: "Email hoặc mật khẩu không chính xác",
-        },
-      });
-    }
-
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
-      expiresIn: "7d",
-    });
-
-    return res.json({
-      success: true,
-      message: "Đăng nhập thành công",
-      data: {
-        token,
-        user: {
-          id: user.id,
-          email: user.email,
-          fullName: user.fullName,
-          role: user.role,
-          avatarUrl: user.avatarUrl,
-        },
-      },
-    });
-  } catch (error) {
-    return next(error);
-  }
-});
+// 5. Endpoint Xem thông tin tài khoản hiện tại (Yêu cầu có token)
+router.get(
+  "/me",
+  authenticateToken,
+  authController.getMe
+);
 
 export const authRoutes: Router = router;

@@ -10,12 +10,21 @@ import {
   UserPlus
 } from 'lucide-react';
 
+export interface CurrentUser {
+  id?: string;
+  fullName: string;
+  email: string;
+  role?: string;
+  avatarUrl?: string | null;
+}
+
 interface HeaderProps {
   onOpenSearch: () => void;
   savedCount: number;
   onSelectSaved: () => void;
   onNavigateSection: (sectionId: string) => void;
   isLoggedIn?: boolean;
+  currentUser?: CurrentUser | null;
   onOpenAuth?: (tab: 'login' | 'register') => void;
   onLogout?: () => void;
 }
@@ -26,6 +35,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectSaved,
   onNavigateSection,
   isLoggedIn = false,
+  currentUser = null,
   onOpenAuth,
   onLogout
 }) => {
@@ -35,12 +45,17 @@ export const Header: React.FC<HeaderProps> = ({
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        // Can optionally close or keep interactive
+        setIsProfileOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const displayName = currentUser?.fullName || 'Alex Nguyen';
+  const displayEmail = currentUser?.email || 'alex@devfolio.io';
+  const displayRole = currentUser?.role || 'PRO';
+  const displayAvatar = currentUser?.avatarUrl || '/images/alex-avatar.jpg';
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-white/[0.07] bg-[#090d14]/85 backdrop-blur-xl">
@@ -135,15 +150,22 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-[#111723] hover:bg-[#172031] border border-white/[0.08] text-xs transition"
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-[#111723] hover:bg-[#172031] border border-white/[0.08] text-xs transition cursor-pointer"
               >
-                <span className="text-slate-200 font-medium hidden sm:inline">Alex Nguyen</span>
-                <div className="relative w-6 h-6 rounded-full overflow-hidden border border-emerald-500/40">
-                  <img 
-                    src="/images/alex-avatar.jpg" 
-                    alt="Alex Nguyen Avatar" 
-                    className="w-full h-full object-cover"
-                  />
+                <span className="text-slate-200 font-medium hidden sm:inline">{displayName}</span>
+                <div className="relative w-6 h-6 rounded-full overflow-hidden border border-emerald-500/40 bg-emerald-500/20 flex items-center justify-center text-[10px] text-emerald-300 font-bold">
+                  {displayAvatar ? (
+                    <img 
+                      src={displayAvatar} 
+                      alt={displayName} 
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    displayName.charAt(0).toUpperCase()
+                  )}
                 </div>
                 <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
               </button>
@@ -154,21 +176,30 @@ export const Header: React.FC<HeaderProps> = ({
                   {/* User Info Header */}
                   <div className="flex items-center gap-3 p-2 rounded-xl bg-white/[0.03] border border-white/[0.05] mb-2">
                     <div className="relative">
-                      <img 
-                        src="/images/alex-avatar.jpg" 
-                        alt="Alex Nguyen" 
-                        className="w-10 h-10 rounded-full object-cover border border-emerald-500/40 shadow-sm"
-                      />
+                      <div className="w-10 h-10 rounded-full overflow-hidden border border-emerald-500/40 bg-emerald-500/20 flex items-center justify-center text-sm font-bold text-emerald-300 shadow-sm">
+                        {displayAvatar ? (
+                          <img 
+                            src={displayAvatar} 
+                            alt={displayName} 
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          displayName.charAt(0).toUpperCase()
+                        )}
+                      </div>
                       <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-[#0c111a] rounded-full" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-semibold text-white text-xs truncate">Alex Nguyen</span>
-                        <span className="px-1.5 py-0.2 text-[9px] font-bold rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                          PRO
+                        <span className="font-semibold text-white text-xs truncate">{displayName}</span>
+                        <span className="px-1.5 py-0.2 text-[9px] font-bold rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 uppercase">
+                          {displayRole}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-400 truncate">@alexdev • alex@devfolio.io</p>
+                      <p className="text-[11px] text-slate-400 truncate">{displayEmail}</p>
                     </div>
                   </div>
 
@@ -179,7 +210,7 @@ export const Header: React.FC<HeaderProps> = ({
                         onSelectSaved();
                         setIsProfileOpen(false);
                       }}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.06] hover:text-white transition group"
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.06] hover:text-white transition group cursor-pointer"
                     >
                       <div className="flex items-center gap-2.5">
                         <Heart className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
@@ -192,10 +223,10 @@ export const Header: React.FC<HeaderProps> = ({
 
                     <button 
                       onClick={() => {
-                        alert('Mở trang cài đặt tài khoản Alex Nguyen');
+                        alert(`Cài đặt tài khoản của ${displayName}`);
                         setIsProfileOpen(false);
                       }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-white/[0.06] hover:text-white transition"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-white/[0.06] hover:text-white transition cursor-pointer"
                     >
                       <Settings className="w-3.5 h-3.5 text-slate-400" />
                       <span>Cài đặt tài khoản</span>
@@ -206,7 +237,7 @@ export const Header: React.FC<HeaderProps> = ({
                         alert('Chuyển hướng đến Admin Studio Portal');
                         setIsProfileOpen(false);
                       }}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.06] hover:text-white transition group"
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.06] hover:text-white transition group cursor-pointer"
                     >
                       <div className="flex items-center gap-2.5">
                         <Layers className="w-3.5 h-3.5 text-cyan-400" />
@@ -224,7 +255,7 @@ export const Header: React.FC<HeaderProps> = ({
                         onLogout?.();
                         setIsProfileOpen(false);
                       }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-rose-400 hover:bg-rose-500/10 transition"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
                     >
                       <LogOut className="w-3.5 h-3.5" />
                       <span>Đăng xuất</span>
