@@ -81,6 +81,12 @@ export const Header: React.FC<HeaderProps> = ({
               Tài liệu & Blog
             </button>
             <button 
+              onClick={() => onNavigateSection('ai-assistant')}
+              className="px-3 py-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-white/[0.04] transition-colors"
+            >
+              Trợ lý AI
+            </button>
+            <button 
               onClick={() => onNavigateSection('contact')}
               className="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.04] transition-colors"
             >
