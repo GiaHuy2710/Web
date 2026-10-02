@@ -11,8 +11,14 @@ import {
   ProjectCard,
   ProjectsToolbar,
   Pagination,
+  ProjectDetailPage,
+  // AI Assistant component
+  AiAssistantPage,
+  // Contact component
+  ContactPage,
+  // Docs component
+  DocsPage,
   // Interactive Modals
-  ProjectDetailModal,
   CommandPaletteModal,
   CvModal,
   // Auth components
@@ -29,12 +35,13 @@ export const App: React.FC = () => {
   const [selectedTech, setSelectedTech] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<string>('newest');
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [currentView, setCurrentView] = useState<'projects' | 'project-detail' | 'ai-assistant' | 'contact' | 'docs'>('docs');
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isCvOpen, setIsCvOpen] = useState<boolean>(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
 
   // Global Ctrl+K listener for Command Search
   useEffect(() => {
@@ -100,16 +107,23 @@ export const App: React.FC = () => {
 
   const handleNavigateSection = (sectionId: string) => {
     if (sectionId === 'projects') {
-      handleExploreProjects();
+      setSelectedProject(null);
+      setCurrentView('projects');
+      setTimeout(() => handleExploreProjects(), 50);
     } else if (sectionId === 'about') {
       setIsCvOpen(true);
     } else if (sectionId === 'docs') {
-      alert('Tài liệu kỹ thuật & blog đang được tổng hợp và xuất bản định kỳ.');
+      setSelectedProject(null);
+      setCurrentView('docs');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (sectionId === 'ai-assistant') {
+      setSelectedProject(null);
+      setCurrentView('ai-assistant');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (sectionId === 'contact') {
-      const contactSection = document.getElementById('contact');
-      if (contactSection) {
-        contactSection.scrollIntoView({ behavior: 'smooth' });
-      }
+      setSelectedProject(null);
+      setCurrentView('contact');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (sectionId === 'login') {
       setAuthTab('login');
       setIsAuthOpen(true);
@@ -137,89 +151,112 @@ export const App: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6">
-        
-        {/* Hero Section */}
-        <HeroSection 
-          onExploreProjects={handleExploreProjects}
-          onOpenCvModal={() => setIsCvOpen(true)}
-        />
-
-        {/* Stats Section */}
-        <StatsSection />
-
-        {/* Projects Toolbar (Tabs, Sort, Tech Filter) */}
-        <ProjectsToolbar 
-          activeCategory={activeCategory}
-          onSelectCategory={(cat) => {
-            setActiveCategory(cat);
-            setCurrentPage(1);
+      {currentView === 'docs' ? (
+        <DocsPage />
+      ) : currentView === 'contact' ? (
+        <ContactPage />
+      ) : currentView === 'ai-assistant' ? (
+        <AiAssistantPage />
+      ) : selectedProject ? (
+        <ProjectDetailPage 
+          project={selectedProject}
+          onBack={() => {
+            setSelectedProject(null);
+            setCurrentView('projects');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          selectedTech={selectedTech}
-          onSelectTech={(tech) => {
-            setSelectedTech(tech);
-            setCurrentPage(1);
+          onSelectProject={(p) => {
+            setSelectedProject(p);
+            setCurrentView('project-detail');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
+          allProjects={projects}
         />
+      ) : (
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6">
+          {/* Hero Section */}
+          <HeroSection 
+            onExploreProjects={handleExploreProjects}
+            onOpenCvModal={() => setIsCvOpen(true)}
+          />
 
-        {/* Projects 3-Column Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 my-6">
-          {filteredProjects.map((project) => (
-            <ProjectCard 
-              key={project.id}
-              project={project}
-              onSelectProject={setSelectedProject}
-              onToggleLike={handleToggleLike}
-            />
-          ))}
-        </div>
+          {/* Stats Section */}
+          <StatsSection />
 
-        {/* Empty state if filter has no results */}
-        {filteredProjects.length === 0 && (
-          <div className="py-16 text-center rounded-2xl bg-[#0d131f] border border-white/[0.06] space-y-3">
-            <p className="text-sm text-slate-400">Không có dự án nào khớp với bộ lọc hiện tại.</p>
-            <button
-              onClick={() => {
-                setActiveCategory('all');
-                setSelectedTech(null);
-              }}
-              className="px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-semibold hover:bg-emerald-500/30 transition"
-            >
-              Đặt lại bộ lọc
-            </button>
+          {/* Projects Toolbar (Tabs, Sort, Tech Filter) */}
+          <ProjectsToolbar 
+            activeCategory={activeCategory}
+            onSelectCategory={(cat) => {
+              setActiveCategory(cat);
+              setCurrentPage(1);
+            }}
+            selectedTech={selectedTech}
+            onSelectTech={(tech) => {
+              setSelectedTech(tech);
+              setCurrentPage(1);
+            }}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+          />
+
+          {/* Projects 3-Column Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 my-6">
+            {filteredProjects.map((project) => (
+              <ProjectCard 
+                key={project.id}
+                project={project}
+                onSelectProject={(p) => {
+                  setSelectedProject(p);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onToggleLike={handleToggleLike}
+              />
+            ))}
           </div>
-        )}
 
-        {/* Pagination Bar */}
-        <Pagination 
-          currentPage={currentPage}
-          totalPages={4}
-          totalItems={24}
-          onPageChange={setCurrentPage}
-        />
+          {/* Empty state if filter has no results */}
+          {filteredProjects.length === 0 && (
+            <div className="py-16 text-center rounded-2xl bg-[#0d131f] border border-white/[0.06] space-y-3">
+              <p className="text-sm text-slate-400">Không có dự án nào khớp với bộ lọc hiện tại.</p>
+              <button
+                onClick={() => {
+                  setActiveCategory('all');
+                  setSelectedTech(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-semibold hover:bg-emerald-500/30 transition"
+              >
+                Đặt lại bộ lọc
+              </button>
+            </div>
+          )}
 
-        {/* Newsletter Section with Interactive Simulation */}
-        <NewsletterSection />
+          {/* Pagination Bar */}
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={4}
+            totalItems={24}
+            onPageChange={setCurrentPage}
+          />
 
-      </main>
+          {/* Newsletter Section with Interactive Simulation */}
+          <NewsletterSection />
+        </main>
+      )}
 
       {/* Footer */}
       <Footer />
-
-      {/* Project Detail Modal */}
-      <ProjectDetailModal 
-        project={selectedProject}
-        onClose={() => setSelectedProject(null)}
-      />
 
       {/* Command Palette Modal (Ctrl + K) */}
       <CommandPaletteModal 
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         projects={projects}
-        onSelectProject={setSelectedProject}
+        onSelectProject={(p) => {
+          setSelectedProject(p);
+          setCurrentView('project-detail');
+          setIsSearchOpen(false);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
       />
 
       {/* CV Modal */}
