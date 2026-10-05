@@ -31,12 +31,14 @@ export class AuthService {
     });
 
     if (!user) {
+      console.warn(`[AUTH] Đăng nhập thất bại: Không tìm thấy tài khoản với email "${email}"`);
       throw new AppError("Email hoặc mật khẩu không chính xác", 401, "UNAUTHORIZED");
     }
 
     // So sánh mật khẩu người dùng nhập với mật khẩu băm đã lưu
     const isPasswordValid = await bcrypt.compare(input.password, user.password);
     if (!isPasswordValid) {
+      console.warn(`[AUTH] Đăng nhập thất bại: Mật khẩu không chính xác cho tài khoản "${email}"`);
       throw new AppError("Email hoặc mật khẩu không chính xác", 401, "UNAUTHORIZED");
     }
 

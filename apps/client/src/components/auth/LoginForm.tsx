@@ -22,7 +22,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onSucc
     setError(null);
 
     // Validation cơ bản trước khi gửi request
-    const trimmedEmail = email.trim();
+    const trimmedEmail = email.trim().toLowerCase();
     if (!trimmedEmail) {
       setError('Vui lòng nhập địa chỉ email của bạn.');
       return;
