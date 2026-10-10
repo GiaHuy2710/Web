@@ -21,7 +21,7 @@ export const RegisterSchema = z.object({
   fullName: z
     .string({ required_error: "Vui lòng nhập họ tên" })
     .min(2, "Họ tên phải từ 2 ký tự trở lên"),
-  role: z.enum(["USER", "ADMIN", "MANAGER"]).default("USER"),
+  role: z.enum(["USER", "ADMIN", "MANAGER"]).optional().default("USER"),
 });
 
 // Schema kiểm tra dữ liệu Quên mật khẩu

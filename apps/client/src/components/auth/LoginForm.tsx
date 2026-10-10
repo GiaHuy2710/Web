@@ -156,16 +156,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onSucc
 
         {/* Mật khẩu */}
         <div>
-          <div className="flex justify-between items-center mb-1.5">
-            <label className="text-xs font-medium text-slate-300">Mật khẩu</label>
-            <button
-              type="button"
-              onClick={() => alert('Vui lòng liên hệ quản trị viên hoặc sử dụng tính năng quên mật khẩu qua API.')}
-              className="text-xs text-emerald-400 hover:underline cursor-pointer"
-            >
-              Quên mật khẩu?
-            </button>
-          </div>
+          <label className="block text-xs font-medium text-slate-300 mb-1.5">Mật khẩu</label>
           <div className="relative">
             <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
@@ -223,6 +214,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onSucc
             </>
           )}
         </button>
+
+        {/* Quên mật khẩu */}
+        <div className="text-center pt-1">
+          <button
+            type="button"
+            onClick={() => alert('Vui lòng liên hệ quản trị viên hoặc sử dụng tính năng quên mật khẩu qua API.')}
+            className="text-xs text-slate-400 hover:text-emerald-400 hover:underline transition-colors cursor-pointer"
+          >
+            Quên mật khẩu?
+          </button>
+        </div>
       </form>
 
       {/* 5. Chuyển sang Đăng ký */}

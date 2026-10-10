@@ -83,7 +83,7 @@ export class AuthService {
         email,
         password: hashedPassword,
         fullName: input.fullName.trim(),
-        role: input.role as Role,
+        role: Role.USER, // Đăng ký mặc định là USER thường; ADMIN/MANAGER do admin cấp quyền
         profile: {
           create: {
             title: "Software Engineer",

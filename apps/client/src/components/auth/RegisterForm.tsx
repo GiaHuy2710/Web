@@ -7,12 +7,10 @@ import {
   Eye, 
   EyeOff, 
   ShieldCheck, 
-  Briefcase, 
-  Rocket, 
   ArrowRight, 
-  Check,
-  AlertCircle,
-  Loader2
+  Check, 
+  AlertCircle, 
+  Loader2 
 } from 'lucide-react';
 import { authApi } from '../../shared/api';
 import { AuthUser } from '../../types/auth';
@@ -25,7 +23,6 @@ interface RegisterFormProps {
 export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [role, setRole] = useState<'dev' | 'business' | 'tech_lover'>('dev');
 
   // Input fields
   const [fullname, setFullname] = useState('');
@@ -273,67 +270,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onS
               className="text-slate-500 hover:text-slate-300 absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors cursor-pointer"
             >
               {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Vai trò */}
-        <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1.5">
-            Vai trò & Mục đích tham gia
-          </label>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => setRole('dev')}
-              className={`p-2.5 rounded-xl border text-left transition-all ${
-                role === 'dev'
-                  ? 'bg-[#102425] border-emerald-500/70 text-emerald-400'
-                  : 'bg-[#0f171f] border-[#1d2a37] text-slate-400 hover:border-slate-600'
-              }`}
-            >
-              <div className="font-bold text-xs">
-                &lt;&gt; Dev
-              </div>
-              <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
-                Lập trình viên
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setRole('business')}
-              className={`p-2.5 rounded-xl border text-left transition-all ${
-                role === 'business'
-                  ? 'bg-[#102425] border-emerald-500/70 text-emerald-400'
-                  : 'bg-[#0f171f] border-[#1d2a37] text-slate-400 hover:border-slate-600'
-              }`}
-            >
-              <div className="flex items-center gap-1 font-bold text-xs text-slate-200">
-                <Briefcase className="w-3 h-3" />
-                <span>Doanh nghiệp</span>
-              </div>
-              <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
-                Tuyển dụng
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setRole('tech_lover')}
-              className={`p-2.5 rounded-xl border text-left transition-all ${
-                role === 'tech_lover'
-                  ? 'bg-[#102425] border-emerald-500/70 text-emerald-400'
-                  : 'bg-[#0f171f] border-[#1d2a37] text-slate-400 hover:border-slate-600'
-              }`}
-            >
-              <div className="flex items-center gap-1 font-bold text-xs text-slate-200">
-                <Rocket className="w-3 h-3" />
-                <span>Yêu CN</span>
-              </div>
-              <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
-                Khám phá
-              </div>
             </button>
           </div>
         </div>
