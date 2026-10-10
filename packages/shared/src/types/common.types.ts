@@ -9,7 +9,7 @@ export const ApiResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
       .object({
         code: z.string(),
         message: z.string(),
-        details: z.any().optional(),
+        details: z.unknown().optional(),
       })
       .optional(),
   });

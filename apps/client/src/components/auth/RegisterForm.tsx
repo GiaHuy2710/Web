@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { 
   Contact, 
   Mail, 
@@ -6,20 +7,22 @@ import {
   Eye, 
   EyeOff, 
   ShieldCheck, 
-  Briefcase, 
-  Rocket, 
   ArrowRight, 
-  Check 
+  Check, 
+  AlertCircle, 
+  Loader2 
 } from 'lucide-react';
+import { authApi } from '../../shared/api';
+import { AuthUser } from '../../types/auth';
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (user?: AuthUser) => void;
 }
 
-export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
+export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<'dev' | 'business' | 'tech_lover'>('dev');
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Input fields
   const [fullname, setFullname] = useState('');
@@ -30,6 +33,81 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
   // Checkboxes
   const [agreeTerms, setAgreeTerms] = useState(true);
   const [subscribeNewsletter, setSubscribeNewsletter] = useState(true);
+
+  // States
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    const trimmedName = fullname.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (!trimmedName || trimmedName.length < 2) {
+      setError('Họ và tên hoặc Nickname phải từ 2 ký tự trở lên.');
+      return;
+    }
+
+    if (!trimmedEmail) {
+      setError('Vui lòng nhập địa chỉ email.');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setError('Địa chỉ email không đúng định dạng.');
+      return;
+    }
+
+    if (!password || password.length < 6) {
+      setError('Mật khẩu cần tối thiểu 6 ký tự.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Mật khẩu nhập lại không khớp.');
+      return;
+    }
+
+    if (!agreeTerms) {
+      setError('Bạn cần đồng ý với Điều khoản & Chính sách để tiếp tục.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Gọi qua tầng Service Frontend riêng biệt
+      const data = await authApi.register({
+        fullName: trimmedName,
+        email: trimmedEmail,
+        password,
+        role: 'USER',
+      });
+
+      if (data?.token && data?.user) {
+        authApi.saveSession(data.token, data.user);
+      }
+
+      if (onSuccess) {
+        onSuccess(data?.user);
+      }
+    } catch (err: unknown) {
+      console.error('Lỗi đăng ký:', err);
+      let apiMessage = 'Đăng ký không thành công. Email này có thể đã được đăng ký.';
+      if (axios.isAxiosError(err)) {
+        apiMessage =
+          err.response?.data?.error?.message ||
+          err.response?.data?.message ||
+          (err.code === 'ERR_NETWORK'
+            ? 'Không thể kết nối máy chủ API (Server có thể chưa khởi động).'
+            : apiMessage);
+      }
+      setError(apiMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-md mx-auto text-slate-200">
@@ -43,10 +121,19 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
         </p>
       </div>
 
+      {/* Thông báo lỗi */}
+      {error && (
+        <div className="mb-5 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-start gap-2.5 animate-in fade-in">
+          <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+          <span className="leading-relaxed">{error}</span>
+        </div>
+      )}
+
       {/* 2. Social Register (2 cột song song) */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         <button
           type="button"
+          onClick={() => setError('Tính năng đăng ký qua GitHub đang được cập nhật.')}
           className="flex items-center justify-center gap-2.5 py-2.5 px-3 bg-[#131b26] hover:bg-[#182332] border border-[#1e2d3e] rounded-xl text-xs font-medium text-slate-200 transition-colors cursor-pointer"
         >
           <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -57,6 +144,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
 
         <button
           type="button"
+          onClick={() => setError('Tính năng đăng ký qua Google đang được cập nhật.')}
           className="flex items-center justify-center gap-2.5 py-2.5 px-3 bg-[#131b26] hover:bg-[#182332] border border-[#1e2d3e] rounded-xl text-xs font-medium text-slate-200 transition-colors cursor-pointer"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -77,7 +165,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
       </div>
 
       {/* 3. Form fields */}
-      <form onSubmit={(e) => e.preventDefault()} className="space-y-3.5">
+      <form onSubmit={handleSubmit} className="space-y-3.5">
         {/* Họ tên */}
         <div>
           <div className="flex justify-between items-center mb-1.5">
@@ -89,9 +177,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
             <input
               type="text"
               value={fullname}
-              onChange={(e) => setFullname(e.target.value)}
+              onChange={(e) => {
+                setFullname(e.target.value);
+                if (error) setError(null);
+              }}
               placeholder="VD: Alex Nguyen (@alexdev)"
-              className="w-full bg-[#0e1620] border border-[#1d2a38] rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+              disabled={isLoading}
+              className="w-full bg-[#0e1620] border border-[#1d2a38] rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50"
             />
           </div>
         </div>
@@ -107,9 +199,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (error) setError(null);
+              }}
               placeholder="alex@domain.com"
-              className="w-full bg-[#0e1620] border border-[#1d2a38] rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+              disabled={isLoading}
+              className="w-full bg-[#0e1620] border border-[#1d2a38] rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50"
             />
           </div>
         </div>
@@ -118,16 +214,22 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
         <div>
           <div className="flex justify-between items-center mb-1.5">
             <label className="text-xs font-medium text-slate-300">Mật khẩu</label>
-            <span className="text-xs font-medium text-emerald-400">Rất mạnh (16 ký tự)</span>
+            <span className="text-xs font-medium text-emerald-400">
+              {password.length >= 10 ? 'Rất mạnh' : password.length >= 6 ? 'Đạt chuẩn' : 'Tối thiểu 6 ký tự'}
+            </span>
           </div>
           <div className="relative">
             <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type={showPassword ? 'text' : 'password'}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (error) setError(null);
+              }}
               placeholder="••••••••••••••••"
-              className="w-full bg-[#0e1620] border border-[#1d2a38] rounded-xl pl-10 pr-10 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+              disabled={isLoading}
+              className="w-full bg-[#0e1620] border border-[#1d2a38] rounded-xl pl-10 pr-10 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50"
             />
             <button
               type="button"
@@ -139,10 +241,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
           </div>
 
           <div className="grid grid-cols-4 gap-2 mt-2">
-            <div className="h-1 rounded-full bg-emerald-400"></div>
-            <div className="h-1 rounded-full bg-emerald-400"></div>
-            <div className="h-1 rounded-full bg-emerald-400"></div>
-            <div className="h-1 rounded-full bg-emerald-400"></div>
+            <div className={`h-1 rounded-full ${password.length >= 2 ? 'bg-emerald-400' : 'bg-slate-700'}`}></div>
+            <div className={`h-1 rounded-full ${password.length >= 6 ? 'bg-emerald-400' : 'bg-slate-700'}`}></div>
+            <div className={`h-1 rounded-full ${password.length >= 10 ? 'bg-emerald-400' : 'bg-slate-700'}`}></div>
+            <div className={`h-1 rounded-full ${password.length >= 12 ? 'bg-emerald-400' : 'bg-slate-700'}`}></div>
           </div>
         </div>
 
@@ -152,72 +254,22 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
           <div className="relative">
             <ShieldCheck className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
-              type="password"
+              type={showConfirmPassword ? 'text' : 'password'}
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (error) setError(null);
+              }}
               placeholder="••••••••••••••••"
-              className="w-full bg-[#0e1620] border border-[#1d2a38] rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+              disabled={isLoading}
+              className="w-full bg-[#0e1620] border border-[#1d2a38] rounded-xl pl-10 pr-10 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50"
             />
-          </div>
-        </div>
-
-        {/* Vai trò */}
-        <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1.5">
-            Vai trò & Mục đích tham gia
-          </label>
-          <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
-              onClick={() => setRole('dev')}
-              className={`p-2.5 rounded-xl border text-left transition-all ${
-                role === 'dev'
-                  ? 'bg-[#102425] border-emerald-500/70 text-emerald-400'
-                  : 'bg-[#0f171f] border-[#1d2a37] text-slate-400 hover:border-slate-600'
-              }`}
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="text-slate-500 hover:text-slate-300 absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors cursor-pointer"
             >
-              <div className="font-bold text-xs">
-                &lt;&gt; Dev
-              </div>
-              <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
-                Lập trình viên
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setRole('business')}
-              className={`p-2.5 rounded-xl border text-left transition-all ${
-                role === 'business'
-                  ? 'bg-[#102425] border-emerald-500/70 text-emerald-400'
-                  : 'bg-[#0f171f] border-[#1d2a37] text-slate-400 hover:border-slate-600'
-              }`}
-            >
-              <div className="flex items-center gap-1 font-bold text-xs text-slate-200">
-                <Briefcase className="w-3 h-3" />
-                <span>Doanh nghiệp</span>
-              </div>
-              <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
-                Tuyển dụng
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setRole('tech_lover')}
-              className={`p-2.5 rounded-xl border text-left transition-all ${
-                role === 'tech_lover'
-                  ? 'bg-[#102425] border-emerald-500/70 text-emerald-400'
-                  : 'bg-[#0f171f] border-[#1d2a37] text-slate-400 hover:border-slate-600'
-              }`}
-            >
-              <div className="flex items-center gap-1 font-bold text-xs text-slate-200">
-                <Rocket className="w-3 h-3" />
-                <span>Yêu CN</span>
-              </div>
-              <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
-                Khám phá
-              </div>
+              {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
         </div>
@@ -258,10 +310,20 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
         {/* Nút Submit */}
         <button
           type="submit"
-          className="w-full mt-3 py-3 px-4 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-bold rounded-xl flex items-center justify-center gap-2 shadow-[0_0_24px_rgba(52,211,153,0.35)] transition-all cursor-pointer text-sm"
+          disabled={isLoading}
+          className="w-full mt-3 py-3 px-4 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-bold rounded-xl flex items-center justify-center gap-2 shadow-[0_0_24px_rgba(52,211,153,0.35)] transition-all cursor-pointer text-sm disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <span>Tạo tài khoản miễn phí</span>
-          <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+          {isLoading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin stroke-[2.5]" />
+              <span>Đang tạo tài khoản...</span>
+            </>
+          ) : (
+            <>
+              <span>Tạo tài khoản miễn phí</span>
+              <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+            </>
+          )}
         </button>
       </form>
 
@@ -281,8 +343,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
 
       <p className="mt-8 text-center text-[11px] text-slate-500 leading-relaxed">
         Bằng việc tiếp tục, bạn đồng ý với{' '}
-        <a href="#terms" className="underline hover:text-slate-400">Điều khoản dịch vụ</a> và{' '}
-        <a href="#privacy" className="underline hover:text-slate-400">Chính sách quyền riêng tư</a> của DevFolio.
+        <span className="underline cursor-pointer hover:text-slate-400">Điều khoản dịch vụ</span> và{' '}
+        <span className="underline cursor-pointer hover:text-slate-400">Chính sách quyền riêng tư</span> của DevFolio.
       </p>
     </div>
   );
