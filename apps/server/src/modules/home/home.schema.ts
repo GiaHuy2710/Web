@@ -10,10 +10,14 @@ export const ProjectQuerySchema = z.object({
   limit: z.coerce.number().min(1).max(50).optional().default(6),
 });
 
+export type ProjectQueryInput = z.infer<typeof ProjectQuerySchema>;
+
 //Schema kiểm tra đăng ký nhận bản tin Newsletter
 export const NewsletterSchema = z.object({
   email: z
   .string({ required_error: "Vui lòng nhập địa chỉ email" })
-  .email("Định dạng email không hợp lệ (VD: develop@devfolio,io"),
+  .email("Định dạng email không hợp lệ (VD: develop@devfolio.io)"),
 });
+
+export type NewsletterInput = z.infer<typeof NewsletterSchema>;
 
