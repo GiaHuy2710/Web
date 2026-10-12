@@ -1,16 +1,77 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Check } from 'lucide-react';
+import axios from 'axios';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { authApi } from '../../shared/api';
+import { AuthUser } from '../../types/auth';
 
 interface LoginFormProps {
   onSwitchToRegister: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (user?: AuthUser) => void;
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
+export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    // Validation cơ bản trước khi gửi request
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail) {
+      setError('Vui lòng nhập địa chỉ email của bạn.');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setError('Địa chỉ email không đúng định dạng (ví dụ: user@domain.com).');
+      return;
+    }
+    if (!password) {
+      setError('Vui lòng nhập mật khẩu.');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Mật khẩu cần tối thiểu 6 ký tự.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Gọi qua tầng Service Frontend riêng biệt
+      const data = await authApi.login({
+        email: trimmedEmail,
+        password,
+      });
+
+      if (data?.token && data?.user) {
+        authApi.saveSession(data.token, data.user);
+      }
+
+      if (onSuccess) {
+        onSuccess(data?.user);
+      }
+    } catch (err: unknown) {
+      console.error('Lỗi đăng nhập:', err);
+      let apiMessage = 'Đăng nhập không thành công. Vui lòng kiểm tra lại email và mật khẩu.';
+      if (axios.isAxiosError(err)) {
+        apiMessage =
+          err.response?.data?.error?.message ||
+          err.response?.data?.message ||
+          (err.code === 'ERR_NETWORK'
+            ? 'Không thể kết nối máy chủ API (Server có thể chưa khởi động).'
+            : apiMessage);
+      }
+      setError(apiMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-md mx-auto text-slate-200">
@@ -24,11 +85,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
         </p>
       </div>
 
+      {/* Thông báo lỗi nếu có */}
+      {error && (
+        <div className="mb-5 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-start gap-2.5 animate-in fade-in">
+          <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+          <span className="leading-relaxed">{error}</span>
+        </div>
+      )}
+
       {/* 2. Social Login (2 cột song song) */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         {/* Nút GitHub */}
         <button
           type="button"
+          onClick={() => setError('Tính năng đăng nhập qua GitHub đang được cập nhật.')}
           className="flex items-center justify-center gap-2.5 py-2.5 px-3 bg-[#131b26] hover:bg-[#182332] border border-[#1e2d3e] rounded-xl text-xs font-medium text-slate-200 transition-colors cursor-pointer"
         >
           <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -40,6 +110,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
         {/* Nút Google */}
         <button
           type="button"
+          onClick={() => setError('Tính năng đăng nhập qua Google đang được cập nhật.')}
           className="flex items-center justify-center gap-2.5 py-2.5 px-3 bg-[#131b26] hover:bg-[#182332] border border-[#1e2d3e] rounded-xl text-xs font-medium text-slate-200 transition-colors cursor-pointer"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -61,7 +132,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
       </div>
 
       {/* 4. Form inputs */}
-      <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Email */}
         <div>
           <label className="block text-xs font-medium text-slate-300 mb-1.5">
@@ -72,29 +143,32 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (error) setError(null);
+              }}
               placeholder="alex@domain.com"
-              className="w-full bg-[#0e1620] border border-[#1d2a38] rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+              disabled={isLoading}
+              className="w-full bg-[#0e1620] border border-[#1d2a38] rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50"
             />
           </div>
         </div>
 
         {/* Mật khẩu */}
         <div>
-          <div className="flex justify-between items-center mb-1.5">
-            <label className="text-xs font-medium text-slate-300">Mật khẩu</label>
-            <a href="#forgot" className="text-xs text-emerald-400 hover:underline">
-              Quên mật khẩu?
-            </a>
-          </div>
+          <label className="block text-xs font-medium text-slate-300 mb-1.5">Mật khẩu</label>
           <div className="relative">
             <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type={showPassword ? 'text' : 'password'}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (error) setError(null);
+              }}
               placeholder="••••••••••••"
-              className="w-full bg-[#0e1620] border border-[#1d2a38] rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+              disabled={isLoading}
+              className="w-full bg-[#0e1620] border border-[#1d2a38] rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50"
             />
             <button
               type="button"
@@ -125,11 +199,32 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
         {/* Nút Submit Đăng nhập */}
         <button
           type="submit"
-          className="w-full mt-3 py-3 px-4 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-bold rounded-xl flex items-center justify-center gap-2 shadow-[0_0_24px_rgba(52,211,153,0.35)] transition-all cursor-pointer text-sm"
+          disabled={isLoading}
+          className="w-full mt-3 py-3 px-4 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-bold rounded-xl flex items-center justify-center gap-2 shadow-[0_0_24px_rgba(52,211,153,0.35)] transition-all cursor-pointer text-sm disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <span>Đăng nhập</span>
-          <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+          {isLoading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin stroke-[2.5]" />
+              <span>Đang xử lý đăng nhập...</span>
+            </>
+          ) : (
+            <>
+              <span>Đăng nhập</span>
+              <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+            </>
+          )}
         </button>
+
+        {/* Quên mật khẩu */}
+        <div className="text-center pt-1">
+          <button
+            type="button"
+            onClick={() => alert('Vui lòng liên hệ quản trị viên hoặc sử dụng tính năng quên mật khẩu qua API.')}
+            className="text-xs text-slate-400 hover:text-emerald-400 hover:underline transition-colors cursor-pointer"
+          >
+            Quên mật khẩu?
+          </button>
+        </div>
       </form>
 
       {/* 5. Chuyển sang Đăng ký */}
@@ -149,8 +244,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
       {/* 6. Footer disclaimer */}
       <p className="mt-12 text-center text-[11px] text-slate-500 leading-relaxed">
         Bằng việc tiếp tục, bạn đồng ý với{' '}
-        <a href="#terms" className="underline hover:text-slate-400">Điều khoản dịch vụ</a> và{' '}
-        <a href="#privacy" className="underline hover:text-slate-400">Chính sách quyền riêng tư</a> của DevFolio.
+        <span className="underline cursor-pointer hover:text-slate-400">Điều khoản dịch vụ</span> và{' '}
+        <span className="underline cursor-pointer hover:text-slate-400">Chính sách quyền riêng tư</span> của DevFolio.
       </p>
     </div>
   );

@@ -27,6 +27,8 @@ import {
 
 import { PROJECTS_DATA } from '../data/projectsData';
 import { ProjectItem } from '../types/project';
+import { AuthUser } from '../types/auth';
+import { authApi } from '../shared/api';
 
 export const App: React.FC = () => {
   const [projects, setProjects] = useState<ProjectItem[]>(PROJECTS_DATA);
@@ -41,7 +43,24 @@ export const App: React.FC = () => {
   const [isCvOpen, setIsCvOpen] = useState<boolean>(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+
+  // Quản lý trạng thái xác thực người dùng từ session helper
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => authApi.getCurrentUser());
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => !!authApi.getToken());
+
+  const handleLoginSuccess = (user?: AuthUser) => {
+    if (user) {
+      setCurrentUser(user);
+    }
+    setIsLoggedIn(true);
+    setIsAuthOpen(false);
+  };
+
+  const handleLogout = () => {
+    authApi.clearSession();
+    setCurrentUser(null);
+    setIsLoggedIn(false);
+  };
 
   // Global Ctrl+K listener for Command Search
   useEffect(() => {
@@ -143,11 +162,12 @@ export const App: React.FC = () => {
         onSelectSaved={handleSelectSaved}
         onNavigateSection={handleNavigateSection}
         isLoggedIn={isLoggedIn}
+        currentUser={currentUser}
         onOpenAuth={(tab) => {
           setAuthTab(tab);
           setIsAuthOpen(true);
         }}
-        onLogout={() => setIsLoggedIn(false)}
+        onLogout={handleLogout}
       />
 
       {/* Main Content Area */}
@@ -265,11 +285,13 @@ export const App: React.FC = () => {
         onClose={() => setIsCvOpen(false)}
       />
 
-    <AuthModal 
-      isOpen={isAuthOpen} 
-      onClose={() => setIsAuthOpen(false)} 
-      defaultTab={authTab}
-    />
+      {/* Auth Modal (Login / Register) */}
+      <AuthModal 
+        isOpen={isAuthOpen} 
+        onClose={() => setIsAuthOpen(false)} 
+        defaultTab={authTab}
+        onLoginSuccess={handleLoginSuccess}
+      />
     </div>
   );
 };

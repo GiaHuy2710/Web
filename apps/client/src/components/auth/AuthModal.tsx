@@ -9,17 +9,20 @@ import {
 } from 'lucide-react';
 import { LoginForm } from './LoginForm';
 import { RegisterForm } from './RegisterForm';
+import { AuthUser } from '../../types/auth';
 
 export interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   defaultTab?: 'login' | 'register';
+  onLoginSuccess?: (user?: AuthUser) => void;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ 
   isOpen, 
   onClose, 
-  defaultTab = 'login' 
+  defaultTab = 'login',
+  onLoginSuccess
 }) => {
   const [activeTab, setActiveTab] = useState<'login' | 'register'>(defaultTab);
   const [copied, setCopied] = useState(false);
@@ -52,6 +55,13 @@ match pipeline.query_vector(tensor).await {
     navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleAuthSuccess = (user?: AuthUser) => {
+    if (onLoginSuccess) {
+      onLoginSuccess(user);
+    }
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -131,7 +141,7 @@ match pipeline.query_vector(tensor).await {
                   <span>engine.rs</span>
                   <button 
                     onClick={handleCopyCode}
-                    className="hover:text-white transition flex items-center gap-1"
+                    className="hover:text-white transition flex items-center gap-1 cursor-pointer"
                     title="Sao chép mã"
                   >
                     <Copy className="w-3 h-3" />
@@ -191,7 +201,6 @@ match pipeline.query_vector(tensor).await {
           </div>
         </div>
 
-
         {/* =========================================
             CỘT PHẢI: FORM ĐĂNG NHẬP / ĐĂNG KÝ
            ========================================= */}
@@ -213,7 +222,7 @@ match pipeline.query_vector(tensor).await {
               <button
                 type="button"
                 onClick={() => setActiveTab('login')}
-                className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                   activeTab === 'login'
                     ? 'bg-[#1b2736] text-white shadow-sm'
                     : 'text-slate-400 hover:text-white'
@@ -225,7 +234,7 @@ match pipeline.query_vector(tensor).await {
               <button
                 type="button"
                 onClick={() => setActiveTab('register')}
-                className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                   activeTab === 'register'
                     ? 'bg-[#1b2736] text-white shadow-sm'
                     : 'text-slate-400 hover:text-white'
@@ -239,9 +248,15 @@ match pipeline.query_vector(tensor).await {
           {/* Form nội dung */}
           <div className="my-auto py-4">
             {activeTab === 'login' ? (
-              <LoginForm onSwitchToRegister={() => setActiveTab('register')} />
+              <LoginForm 
+                onSwitchToRegister={() => setActiveTab('register')} 
+                onSuccess={handleAuthSuccess}
+              />
             ) : (
-              <RegisterForm onSwitchToLogin={() => setActiveTab('login')} />
+              <RegisterForm 
+                onSwitchToLogin={() => setActiveTab('login')} 
+                onSuccess={handleAuthSuccess}
+              />
             )}
           </div>
 
