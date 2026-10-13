@@ -10,17 +10,21 @@
     "db:generate": "dotenv -e ../../.env -- prisma generate",
     "db:push": "dotenv -e ../../.env -- prisma db push",
     "db:migrate": "dotenv -e ../../.env -- prisma migrate dev",
-    "db:studio": "dotenv -e ../../.env -- prisma db studio"
+    "db:studio": "dotenv -e ../../.env -- prisma db studio",
+    "db:seed": "dotenv -e ../../.env -- tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@prisma/client": "^5.14.0"
+    "@prisma/client": "^5.14.0",
+    "bcryptjs": "^2.4.3"
   },
   "devDependencies": {
     "@repo/tsconfig": "workspace:*",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.12.12",
     "dotenv-cli": "^11.0.0",
     "eslint": "^8.57.0",
     "prisma": "^5.14.0",
+    "tsx": "^4.10.5",
     "typescript": "^5.4.5"
   }
 }

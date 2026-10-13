@@ -107,6 +107,13 @@ export const Header: React.FC<HeaderProps> = ({
             >
               Liên hệ
             </button>
+            <button 
+              onClick={() => onNavigateSection('admin')}
+              className="px-2.5 py-1 rounded-lg text-cyan-300/90 hover:text-cyan-200 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/25 transition-colors flex items-center gap-1.5 text-xs font-semibold"
+            >
+              <Layers className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Admin Studio</span>
+            </button>
           </nav>
         </div>
 
@@ -234,7 +241,7 @@ export const Header: React.FC<HeaderProps> = ({
 
                     <button 
                       onClick={() => {
-                        alert('Chuyển hướng đến Admin Studio Portal');
+                        onNavigateSection('admin');
                         setIsProfileOpen(false);
                       }}
                       className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.06] hover:text-white transition group cursor-pointer"

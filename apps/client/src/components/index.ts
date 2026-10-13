@@ -1,4 +1,7 @@
-// Layout components (Header, Footer)
+// UI basic elements (Button, Input, Modal)
+export * from './ui';
+
+// Layout components (Header, Footer, Sidebar)
 export * from './layout';
 
 // Page sections (Hero, Stats, Newsletter)
@@ -22,5 +25,5 @@ export * from './contact';
 // Docs & Blog components (DocsPage)
 export * from './docs';
 
-
-
+// Admin Studio components (AdminDashboard)
+export * from './admin';
