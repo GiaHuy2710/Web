@@ -1,12 +1,8 @@
 import React from 'react';
 import { PlusCircle, RefreshCw, Key, Terminal } from 'lucide-react';
+import { QuickActionsProps } from '../types';
 
-export interface QuickActionsProps {
-  onOpenNewTool: () => void;
-  onPurgeCdn: () => void;
-  onOpenAdminInvite: () => void;
-  onOpenRealtimeLogs: () => void;
-}
+export { type QuickActionsProps };
 
 export const QuickActions: React.FC<QuickActionsProps> = ({
   onOpenNewTool,

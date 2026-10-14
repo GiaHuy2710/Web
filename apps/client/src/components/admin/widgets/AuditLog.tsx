@@ -1,19 +1,8 @@
 import React from 'react';
 import { Clock, RefreshCw } from 'lucide-react';
+import { AuditLogItem, AuditLogProps } from '../types';
 
-export interface AuditLogItem {
-  id: number;
-  time: string;
-  actor: string;
-  action: string;
-  detail: string;
-}
-
-export interface AuditLogProps {
-  logs: AuditLogItem[];
-  isRefreshing: boolean;
-  onRefresh: () => void;
-}
+export { type AuditLogItem, type AuditLogProps };
 
 export const AuditLog: React.FC<AuditLogProps> = ({ logs, isRefreshing, onRefresh }) => {
   return (
