@@ -1,24 +1,19 @@
 import React, { useState } from 'react';
 import { Download, Rocket, X } from 'lucide-react';
-import { AdminSidebar } from './AdminSidebar';
-import { AdminHeader } from './AdminHeader';
-import { KpiMetrics } from './KpiMetrics';
-import { TrafficChart } from './TrafficChart';
-import { RecentUploadsTable } from './RecentUploadsTable';
-import { SystemHealth } from './SystemHealth';
-import { ModerationQueue, ModerationItem } from './ModerationQueue';
-import { QuickActions } from './QuickActions';
-import { AuditLog, AuditLogItem } from './AuditLog';
-import { AdminModals } from './AdminModals';
+import { AdminHeader, AdminSidebar } from './layout';
+import {
+  AuditLog,
+  KpiMetrics,
+  ModerationQueue,
+  QuickActions,
+  RecentUploadsTable,
+  SystemHealth,
+  TrafficChart,
+} from './widgets';
+import { AdminModals } from './modals';
+import { AdminDashboardProps, AuditLogItem, ModerationItem } from './types';
 
-export interface AdminDashboardProps {
-  onBackToHome?: () => void;
-  currentUser?: {
-    fullName?: string;
-    email?: string;
-    avatarUrl?: string | null;
-  } | null;
-}
+export { type AdminDashboardProps };
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onBackToHome,

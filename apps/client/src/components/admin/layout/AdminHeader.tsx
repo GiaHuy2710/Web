@@ -1,17 +1,8 @@
 import React from 'react';
 import { ChevronRight, Search, PlusCircle, Bell } from 'lucide-react';
+import { AdminHeaderProps } from '../types';
 
-export interface AdminHeaderProps {
-  onBackToHome?: () => void;
-  onOpenNewToolModal: () => void;
-  onShowNotification: () => void;
-  pendingCount: number;
-  currentUser?: {
-    fullName?: string;
-    email?: string;
-    avatarUrl?: string | null;
-  } | null;
-}
+export { type AdminHeaderProps };
 
 export const AdminHeader: React.FC<AdminHeaderProps> = ({
   onBackToHome,

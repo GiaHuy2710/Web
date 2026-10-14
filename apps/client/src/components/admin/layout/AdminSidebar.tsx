@@ -9,13 +9,9 @@ import {
   TrendingUp,
   HardDrive
 } from 'lucide-react';
+import { AdminSidebarProps } from '../types';
 
-export interface AdminSidebarProps {
-  activeMenu: string;
-  onSelectMenu: (menu: string) => void;
-  onOpenNewToolModal: () => void;
-  pendingModerationCount: number;
-}
+export { type AdminSidebarProps };
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   activeMenu,

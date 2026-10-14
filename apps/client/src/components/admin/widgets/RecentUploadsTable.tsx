@@ -1,9 +1,8 @@
 import React from 'react';
 import { Sparkles, Database, Boxes, Terminal, Edit3, Clock, MoreVertical } from 'lucide-react';
+import { RecentUploadsTableProps } from '../types';
 
-export interface RecentUploadsTableProps {
-  onShowToast: (msg: string) => void;
-}
+export { type RecentUploadsTableProps };
 
 export const RecentUploadsTable: React.FC<RecentUploadsTableProps> = ({ onShowToast }) => {
   return (
