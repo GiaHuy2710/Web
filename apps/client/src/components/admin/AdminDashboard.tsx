@@ -18,6 +18,7 @@ export { type AdminDashboardProps };
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onBackToHome,
   currentUser,
+  onNavigateTab,
 }) => {
   // Navigation & Filter states
   const [activeMenu, setActiveMenu] = useState<string>('overview');
@@ -146,15 +147,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <div className="flex-1 flex w-full">
         <AdminSidebar 
           activeMenu={activeMenu}
-          onSelectMenu={setActiveMenu}
-          onOpenNewToolModal={() => setIsNewToolModalOpen(true)}
+          onSelectMenu={(menu) => {
+            if (menu === 'users' && onNavigateTab) {
+              onNavigateTab('users');
+            } else if (menu === 'upload' && onNavigateTab) {
+              onNavigateTab('upload');
+            } else {
+              setActiveMenu(menu);
+            }
+          }}
+          onOpenNewToolModal={() => {
+            if (onNavigateTab) {
+              onNavigateTab('upload');
+            } else {
+              setIsNewToolModalOpen(true);
+            }
+          }}
           pendingModerationCount={moderationItems.length}
         />
 
         <div className="flex-1 flex flex-col min-w-0">
           <AdminHeader 
             onBackToHome={onBackToHome}
-            onOpenNewToolModal={() => setIsNewToolModalOpen(true)}
+            onOpenNewToolModal={() => {
+              if (onNavigateTab) {
+                onNavigateTab('upload');
+              } else {
+                setIsNewToolModalOpen(true);
+              }
+            }}
             onShowNotification={() => showToast(`Bạn có ${moderationItems.length} mục kiểm duyệt đang chờ.`)}
             pendingCount={moderationItems.length}
             currentUser={currentUser}
@@ -255,7 +276,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 />
 
                 <QuickActions 
-                  onOpenNewTool={() => setIsNewToolModalOpen(true)}
+                  onOpenNewTool={() => {
+                    if (onNavigateTab) {
+                      onNavigateTab('upload');
+                    } else {
+                      setIsNewToolModalOpen(true);
+                    }
+                  }}
                   onPurgeCdn={handlePurgeCdnCache}
                   onOpenAdminInvite={handleGenerateInviteToken}
                   onOpenRealtimeLogs={() => setIsRealtimeLogsOpen(true)}

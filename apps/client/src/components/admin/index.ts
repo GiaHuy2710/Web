@@ -3,3 +3,4 @@ export * from './layout';
 export * from './widgets';
 export * from './modals';
 export * from './AdminDashboard';
+export * from './AdminStudioPage';

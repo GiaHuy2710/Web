@@ -5,6 +5,7 @@ export interface AdminDashboardProps {
     email?: string;
     avatarUrl?: string | null;
   } | null;
+  onNavigateTab?: (tab: 'overview' | 'users' | 'upload') => void;
 }
 
 export interface AdminHeaderProps {
@@ -22,8 +23,50 @@ export interface AdminHeaderProps {
 export interface AdminSidebarProps {
   activeMenu: string;
   onSelectMenu: (menu: string) => void;
-  onOpenNewToolModal: () => void;
-  pendingModerationCount: number;
+  onOpenNewToolModal?: () => void;
+  pendingModerationCount?: number;
+  onBackToHome?: () => void;
+}
+
+export interface AdminUserActivity {
+  id: string;
+  type: 'project' | 'audit' | 'comment';
+  projectName?: string;
+  title: string;
+  timeAgo: string;
+  quote: string;
+  iconColor: string;
+}
+
+export interface AdminUserMember {
+  id: string;
+  name: string;
+  email: string;
+  handle?: string;
+  avatarUrl?: string;
+  initials?: string;
+  initialsColor?: string;
+  joinDate: string;
+  role: 'Super Admin' | 'Admin' | 'Thành viên' | 'Guest Reviewer' | 'Guest';
+  roleBadgeColor: string;
+  isVerified?: boolean;
+  isSpam?: boolean;
+  status: 'active' | 'pending' | 'banned';
+  recentIp: string;
+  location: string;
+  profileViews: string;
+  userSession: string;
+  activities: AdminUserActivity[];
+}
+
+export interface AdminStudioPageProps {
+  onBackToHome?: () => void;
+  currentUser?: {
+    fullName?: string;
+    email?: string;
+    avatarUrl?: string | null;
+  } | null;
+  onNavigateTab?: (tab: 'overview' | 'users' | 'upload') => void;
 }
 
 export interface ModerationItem {
