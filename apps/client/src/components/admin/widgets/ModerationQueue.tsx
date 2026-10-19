@@ -1,23 +1,8 @@
 import React from 'react';
 import { ShieldCheck, Play } from 'lucide-react';
+import { ModerationItem, ModerationQueueProps } from '../types';
 
-export interface ModerationItem {
-  id: string;
-  type: 'comment' | 'build' | 'contributor';
-  title: string;
-  badge: string;
-  badgeColor: string;
-  time: string;
-  content: string;
-}
-
-export interface ModerationQueueProps {
-  items: ModerationItem[];
-  onApprove: (id: string, name: string) => void;
-  onReject: (id: string) => void;
-  onTestSandbox: () => void;
-  onViewProfile: (name: string) => void;
-}
+export { type ModerationItem, type ModerationQueueProps };
 
 export const ModerationQueue: React.FC<ModerationQueueProps> = ({
   items,

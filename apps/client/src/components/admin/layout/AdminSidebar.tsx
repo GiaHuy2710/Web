@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Terminal,
   BarChart3,
@@ -7,15 +7,12 @@ import {
   PlusCircle,
   ShieldCheck,
   TrendingUp,
-  HardDrive
+  HardDrive,
+  ChevronDown
 } from 'lucide-react';
+import { AdminSidebarProps } from '../types';
 
-export interface AdminSidebarProps {
-  activeMenu: string;
-  onSelectMenu: (menu: string) => void;
-  onOpenNewToolModal: () => void;
-  pendingModerationCount: number;
-}
+export { type AdminSidebarProps };
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   activeMenu,
@@ -23,6 +20,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onOpenNewToolModal,
   pendingModerationCount,
 }) => {
+  const [isProductsDropdownOpen, setIsProductsDropdownOpen] = useState(true);
   return (
     <aside className="w-64 shrink-0 bg-[#0a0f19] border-r border-white/[0.06] flex flex-col justify-between hidden lg:flex">
       <div>
@@ -83,37 +81,77 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               </span>
             </button>
 
-            {/* 3. Sản phẩm & Kho tải */}
-            <button
-              onClick={() => onSelectMenu('products')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-medium transition cursor-pointer ${
-                activeMenu === 'products'
-                  ? 'bg-[#121c2c] text-white border border-emerald-500/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Boxes className="w-4 h-4 text-slate-400" />
-                <span>Sản phẩm & Kho tải</span>
-              </div>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-white/[0.06] text-slate-300 border border-white/[0.08]">
-                48
-              </span>
-            </button>
+            {/* 3. Sản phẩm & Kho tải (Dropdown Accordion) */}
+            <div className="space-y-1">
+              <button
+                type="button"
+                onClick={() => setIsProductsDropdownOpen(!isProductsDropdownOpen)}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-medium transition cursor-pointer ${
+                  activeMenu === 'products' || activeMenu === 'upload'
+                    ? 'bg-[#121c2c] text-white border border-emerald-500/30'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Boxes className={`w-4 h-4 ${activeMenu === 'products' || activeMenu === 'upload' ? 'text-emerald-400' : 'text-slate-400'}`} />
+                  <span>Sản phẩm & Kho tải</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-white/[0.06] text-slate-300 border border-white/[0.08]">
+                    48
+                  </span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                      isProductsDropdownOpen ? 'rotate-180 text-emerald-400' : ''
+                    }`}
+                  />
+                </div>
+              </button>
 
-            {/* 4. Đăng tải mới */}
-            <button
-              onClick={onOpenNewToolModal}
-              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-slate-400 hover:text-emerald-300 hover:bg-emerald-500/5 transition group cursor-pointer"
-            >
-              <div className="flex items-center gap-3">
-                <PlusCircle className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
-                <span>Đăng tải mới</span>
-              </div>
-              <span className="px-1.5 py-0.2 text-[9px] font-bold rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                +Up
-              </span>
-            </button>
+              {/* Sub-menu thả xuống */}
+              {isProductsDropdownOpen && (
+                <div className="ml-4 pl-3 border-l border-white/[0.08] space-y-1 py-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                  {/* Mục con 1: Tất cả sản phẩm */}
+                  <button
+                    type="button"
+                    onClick={() => onSelectMenu('products')}
+                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition cursor-pointer ${
+                      activeMenu === 'products'
+                        ? 'bg-[#152033] text-white border border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.12)]'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]'
+                    }`}
+                  >
+                    <span>Tất cả sản phẩm</span>
+                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-white/[0.05] text-slate-400">
+                      48
+                    </span>
+                  </button>
+
+                  {/* Mục con 2: Đăng tải mới */}
+                  <button
+                    type="button"
+                    onClick={onOpenNewToolModal}
+                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition cursor-pointer ${
+                      activeMenu === 'upload'
+                        ? 'bg-emerald-400 text-slate-950 font-bold shadow-[0_0_14px_rgba(52,211,153,0.35)]'
+                        : 'text-slate-400 hover:text-emerald-300 hover:bg-emerald-500/5'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <PlusCircle className={`w-3.5 h-3.5 ${activeMenu === 'upload' ? 'text-slate-950 stroke-[2.5]' : 'text-emerald-400'}`} />
+                      <span>Đăng tải mới</span>
+                    </div>
+                    <span className={`px-1.5 py-0.2 text-[9px] font-bold rounded ${
+                      activeMenu === 'upload'
+                        ? 'bg-slate-950 text-emerald-400'
+                        : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                    }`}>
+                      +Up
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* 5. Kiểm duyệt & Đánh giá */}
             <button

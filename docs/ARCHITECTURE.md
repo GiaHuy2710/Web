@@ -15,17 +15,12 @@ apps/client/src/
 │   ├── modals/             # Các hộp thoại nghiệp vụ: AuthModal, CvModal, CommandPalette
 │   ├── sections/           # Các phần trang chủ: HeroSection, StatsSection, Newsletter
 │   ├── projects/           # Card dự án, toolbar lọc, phân trang
-│   ├── admin/              # Toàn bộ widget của trang Admin Studio
-│   │   ├── AdminSidebar.tsx
-│   │   ├── AdminHeader.tsx
-│   │   ├── KpiMetrics.tsx
-│   │   ├── TrafficChart.tsx
-│   │   ├── RecentUploadsTable.tsx
-│   │   ├── SystemHealth.tsx
-│   │   ├── ModerationQueue.tsx
-│   │   ├── QuickActions.tsx
-│   │   ├── AuditLog.tsx
-│   │   └── AdminModals.tsx
+│   ├── admin/              # Module Admin Studio (chia module gọn gàng)
+│   │   ├── layout/         # Header & Sidebar của Admin
+│   │   ├── widgets/        # Các widget: KpiMetrics, TrafficChart, SystemHealth, v.v.
+│   │   ├── modals/         # Hộp thoại tạo tool, token invite, log stream
+│   │   ├── types.ts        # Toàn bộ TypeScript interfaces cho Admin
+│   │   └── AdminDashboard.tsx # Component trang chính ráp nối widget
 │   ├── ai-assistant/       # Khối trò chuyện với AI chatbot
 │   ├── contact/            # Form gửi liên hệ, FAQ, thông tin liên lạc
 │   └── docs/               # Danh mục tài liệu kỹ thuật & blog

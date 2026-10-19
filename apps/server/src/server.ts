@@ -7,6 +7,8 @@ import { profileRoutes } from "./modules/profile/profile.routes";
 import { homeRoutes } from "./modules/home/home.routes";
 import { aiRoutes } from "./modules/ai/ai.routes";
 import { contactRoutes } from "./modules/contact/contact.routes";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./config/swagger";
 
 const app: Express = express();
 const PORT = process.env.PORT || 5000;
@@ -40,5 +42,7 @@ if (process.env.NODE_ENV !== "test") {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 export { app };

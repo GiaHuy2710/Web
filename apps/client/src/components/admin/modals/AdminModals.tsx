@@ -1,17 +1,8 @@
 import React from 'react';
 import { PlusCircle, Key, Terminal, X } from 'lucide-react';
+import { AdminModalsProps } from '../types';
 
-export interface AdminModalsProps {
-  isNewToolOpen: boolean;
-  onCloseNewTool: () => void;
-  onSubmitNewTool: () => void;
-  isAdminInviteOpen: boolean;
-  onCloseAdminInvite: () => void;
-  inviteToken: string | null;
-  onCopyInviteToken: () => void;
-  isRealtimeLogsOpen: boolean;
-  onCloseRealtimeLogs: () => void;
-}
+export { type AdminModalsProps };
 
 export const AdminModals: React.FC<AdminModalsProps> = ({
   isNewToolOpen,
