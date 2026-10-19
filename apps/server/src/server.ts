@@ -34,6 +34,9 @@ app.use("/api", homeRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/contact", contactRoutes);
 
+// API Documentation
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 // Centralized Global Error Handler Middleware
 app.use(errorHandler);
 
@@ -42,7 +45,5 @@ if (process.env.NODE_ENV !== "test") {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }
-
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 export { app };
