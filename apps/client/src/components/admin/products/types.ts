@@ -23,6 +23,7 @@ export interface ProductRegistryItem {
 export interface AdminProductsPageProps {
   onBackToHome?: () => void;
   onNavigateToUpload?: () => void;
+  onNavigateTab?: (tab: string) => void;
   currentUser?: {
     fullName?: string;
     email?: string;

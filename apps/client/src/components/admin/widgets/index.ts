@@ -5,3 +5,5 @@ export * from './QuickActions';
 export * from './RecentUploadsTable';
 export * from './ModerationQueue';
 export * from './AuditLog';
+export * from './CommentModerationView';
+export * from './AnalyticsDashboardView';
