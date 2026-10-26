@@ -24,7 +24,12 @@ export const AuditLog: React.FC<AuditLogProps> = ({ logs, isRefreshing, onRefres
       </div>
 
       <div className="space-y-4 mt-4 text-xs">
-        {logs.map((log) => (
+        {logs.length === 0 ? (
+          <div className="py-6 text-center text-slate-500 text-xs">
+            Chưa có sự kiện nào được ghi nhận.
+          </div>
+        ) : (
+          logs.map((log) => (
           <div key={log.id} className="flex items-start gap-3">
             <span className="font-mono text-emerald-400/90 text-[11px] font-semibold shrink-0 pt-0.5">
               {log.time}
@@ -38,7 +43,7 @@ export const AuditLog: React.FC<AuditLogProps> = ({ logs, isRefreshing, onRefres
               </p>
             </div>
           </div>
-        ))}
+        )))}
       </div>
     </div>
   );

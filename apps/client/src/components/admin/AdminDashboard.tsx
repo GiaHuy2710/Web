@@ -12,6 +12,7 @@ import {
 } from './widgets';
 import { AdminModals } from './modals';
 import { AdminDashboardProps, AuditLogItem, ModerationItem } from './types';
+import { getAuditLogs } from './audit';
 
 export { type AdminDashboardProps };
 
@@ -32,68 +33,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [isRealtimeLogsOpen, setIsRealtimeLogsOpen] = useState(false);
   const [generatedInviteToken, setGeneratedInviteToken] = useState<string | null>(null);
 
-  // Moderation Queue state
-  const [moderationItems, setModerationItems] = useState<ModerationItem[]>([
-    {
-      id: 'mod-1',
-      type: 'comment',
-      title: 'BÌNH LUẬN CẦN DUYỆT',
-      badge: 'Bình luận',
-      badgeColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-      time: '10m trước',
-      content: '@techlo_dude đánh giá Synapse AI: "Codebase rất sạch nhưng phần memory optimization ở v2.3 có chút leak khi load weight >4GB."',
-    },
-    {
-      id: 'mod-2',
-      type: 'build',
-      title: 'BẢN BUILD CẬP NHẬT',
-      badge: 'Bản build',
-      badgeColor: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
-      time: '42m trước',
-      content: 'ChromaPalette CLI v1.0.1 đã tải binary lên kho staging, đang đợi kiểm thử sandbox tự động.',
-    },
-    {
-      id: 'mod-3',
-      type: 'contributor',
-      title: 'YÊU CẦU CONTRIBUTOR',
-      badge: 'Contributor',
-      badgeColor: 'text-teal-400 bg-teal-500/10 border-teal-500/20',
-      time: '2h trước',
-      content: 'Dev @namnguyen xin cấp quyền Contributor cho danh mục Web Apps & Open-Source Tools.',
-    },
-  ]);
+  // Moderation Queue state - Mặc định trống
+  const [moderationItems, setModerationItems] = useState<ModerationItem[]>([]);
 
-  // Audit Logs
-  const [auditLogs] = useState<AuditLogItem[]>([
-    {
-      id: 1,
-      time: '14:32',
-      actor: 'Super Admin',
-      action: 'cập nhật bản build Synapse AI v2.4.0',
-      detail: 'Deploy to edge SNG-1',
-    },
-    {
-      id: 2,
-      time: '13:15',
-      actor: 'Hệ thống',
-      action: 'Đã phê duyệt 4 bình luận của dự án CyberRogue',
-      detail: 'Batch moderation approved',
-    },
-    {
-      id: 3,
-      time: '11:40',
-      actor: 'CDN Sync',
-      action: 'Đồng bộ hóa CDN Singapore hoàn tất',
-      detail: 'Cloudflare R2 sync: 100% ok',
-    },
-    {
-      id: 4,
-      time: '09:12',
-      actor: 'Security',
-      action: 'Tạo mã mời Admin cho kỹ sư DevOps',
-      detail: 'Token #ADM-98441 generated',
-    },
-  ]);
+  // Audit Logs - Lấy từ kho nhật ký thực tế
+  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>(() => {
+    const raw = getAuditLogs();
+    return raw.slice(0, 5).map((l, index) => ({
+      id: index + 1,
+      time: l.timeFormatted,
+      actor: l.actor,
+      action: l.action,
+      detail: l.details,
+    }));
+  });
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -113,6 +66,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleRefreshAudit = () => {
     setIsRefreshingAudit(true);
     setTimeout(() => {
+      const raw = getAuditLogs();
+      setAuditLogs(
+        raw.slice(0, 5).map((l, index) => ({
+          id: index + 1,
+          time: l.timeFormatted,
+          actor: l.actor,
+          action: l.action,
+          detail: l.details,
+        }))
+      );
       setIsRefreshingAudit(false);
       showToast('Đã đồng bộ nhật ký kiểm toán mới nhất từ Cloudflare & DB.');
     }, 700);

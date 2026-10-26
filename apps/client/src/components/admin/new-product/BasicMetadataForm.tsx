@@ -89,7 +89,9 @@ export const BasicMetadataForm: React.FC<Props> = ({
               placeholder="VD: RustPulse CLI Monitor"
               className="w-full bg-[#0d1422] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 pr-10 transition font-medium"
             />
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
+            {name.trim().length > 0 && (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
+            )}
           </div>
         </div>
 

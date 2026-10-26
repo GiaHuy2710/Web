@@ -18,6 +18,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 
+import { ProductRegistryItem } from '../products/types';
+
 export interface AnalyticsDashboardViewProps {
   onShowToast: (message: string) => void;
 }
@@ -26,75 +28,74 @@ export const AnalyticsDashboardView: React.FC<AnalyticsDashboardViewProps> = ({ 
   // Period filter: 'today' | '7d' | '30d' | 'all'
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | '7d' | '30d' | 'all'>('30d');
   const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
-  const [activeTooltip, setActiveTooltip] = useState<boolean>(true);
+  const [activeTooltip, setActiveTooltip] = useState<boolean>(false);
+
+  // Products from localStorage
+  const [products] = useState<ProductRegistryItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('devfolio_products');
+        if (raw) return JSON.parse(raw);
+      } catch {
+        // ignore
+      }
+    }
+    return [];
+  });
+
+  const hasData = products.length > 0;
 
   // Referrers data
-  const referrers = [
-    { name: 'GitHub Repository & Topics', percentage: 42, count: '62,280', color: 'bg-emerald-400' },
-    { name: 'X / Twitter Tech Community', percentage: 28, count: '41,520', color: 'bg-cyan-400' },
-    { name: 'Trực tiếp (Direct & Bookmarks)', percentage: 16, count: '23,720', color: 'bg-blue-400' },
-    { name: 'Reddit r/webdev & r/programming', percentage: 9, count: '13,340', color: 'bg-purple-400' },
-    { name: 'Google Search Organic', percentage: 5, count: '7,419', color: 'bg-slate-400' },
-  ];
+  const referrers = hasData
+    ? [
+        { name: 'GitHub Repository & Topics', percentage: 42, count: '62,280', color: 'bg-emerald-400' },
+        { name: 'X / Twitter Tech Community', percentage: 28, count: '41,520', color: 'bg-cyan-400' },
+        { name: 'Trực tiếp (Direct & Bookmarks)', percentage: 16, count: '23,720', color: 'bg-blue-400' },
+        { name: 'Google Search Organic', percentage: 14, count: '20,759', color: 'bg-slate-400' },
+      ]
+    : [];
 
   // Top Performing Projects
-  const topProjects = [
-    {
-      id: 'proj-1',
-      name: 'Synapse AI Studio',
-      version: 'v2.4 • Core Engine',
-      image: '/images/synapse-ai.jpg',
-      views: '62,400',
-      demos: '18,340',
-      stars: '1.4k',
-      growth: '+42.8%',
-      isHot: true,
-    },
-    {
-      id: 'proj-2',
-      name: 'DevPulse Analytics',
-      version: 'v1.8 • Monitoring',
-      image: '/images/devpulse.jpg',
-      views: '38,120',
-      demos: '9,280',
-      stars: '890',
-      growth: '+18.2%',
-      isHot: false,
-    },
-    {
-      id: 'proj-3',
-      name: 'ChromaPalette Generator',
-      version: 'v3.0 • UI/UX Tool',
-      image: '/images/chromapalette.jpg',
-      views: '22,940',
-      demos: '4,580',
-      stars: '520',
-      growth: '+9.6%',
-      isHot: false,
-    },
-  ];
+  const topProjects = hasData
+    ? products.map((item, idx) => ({
+        id: item.id,
+        name: item.name,
+        version: `${item.version} • ${item.categoryLabel}`,
+        image: '/images/synapse-ai.jpg',
+        views: item.downloads,
+        demos: '0',
+        stars: '0',
+        growth: '+0%',
+        isHot: idx === 0,
+      }))
+    : [];
 
   // Device breakdown
-  const devices = [
-    { name: 'Desktop & Workstation', percentage: 82, icon: Monitor, color: 'text-emerald-400 bg-emerald-400' },
-    { name: 'Mobile (iOS / Android)', percentage: 16, icon: Smartphone, color: 'text-cyan-400 bg-cyan-400' },
-    { name: 'Tablet Devices', percentage: 2, icon: Tablet, color: 'text-slate-400 bg-slate-400' },
-  ];
+  const devices = hasData
+    ? [
+        { name: 'Desktop & Workstation', percentage: 82, icon: Monitor, color: 'text-emerald-400 bg-emerald-400' },
+        { name: 'Mobile (iOS / Android)', percentage: 16, icon: Smartphone, color: 'text-cyan-400 bg-cyan-400' },
+        { name: 'Tablet Devices', percentage: 2, icon: Tablet, color: 'text-slate-400 bg-slate-400' },
+      ]
+    : [];
 
   // OS & Browser
-  const runtimes = [
-    { name: 'macOS • Chrome', percentage: 51.2, color: 'bg-emerald-400' },
-    { name: 'Windows • Edge / Chrome', percentage: 31.8, color: 'bg-cyan-400' },
-    { name: 'Linux • Firefox Dev Edition', percentage: 14.3, color: 'bg-purple-400' },
-  ];
+  const runtimes = hasData
+    ? [
+        { name: 'macOS • Chrome', percentage: 51.2, color: 'bg-emerald-400' },
+        { name: 'Windows • Edge / Chrome', percentage: 31.8, color: 'bg-cyan-400' },
+        { name: 'Linux • Firefox Dev Edition', percentage: 14.3, color: 'bg-purple-400' },
+      ]
+    : [];
 
   // Geos
-  const geos = [
-    { code: 'VN', name: 'Việt Nam', percentage: 54, color: 'bg-emerald-400' },
-    { code: 'US', name: 'Hoa Kỳ (Mỹ)', percentage: 22, color: 'bg-cyan-400' },
-    { code: 'SG', name: 'Singapore', percentage: 11, color: 'bg-blue-400' },
-    { code: 'JP', name: 'Nhật Bản', percentage: 8, color: 'bg-purple-400' },
-  ];
+  const geos = hasData
+    ? [
+        { code: 'VN', name: 'Việt Nam', percentage: 65, color: 'bg-emerald-400' },
+        { code: 'US', name: 'Hoa Kỳ (Mỹ)', percentage: 20, color: 'bg-cyan-400' },
+        { code: 'SG', name: 'Singapore', percentage: 15, color: 'bg-blue-400' },
+      ]
+    : [];
 
   const handleExport = (format: 'csv' | 'json' | 'pdf') => {
     setIsExportDropdownOpen(false);
@@ -227,11 +228,11 @@ export const AnalyticsDashboardView: React.FC<AnalyticsDashboardViewProps> = ({ 
               TỔNG PAGEVIEWS
             </div>
             <div className="text-2xl font-bold text-white tracking-tight">
-              148,290
+              {hasData ? '14,290' : '0'}
             </div>
             <div className="flex items-center gap-1.5 text-xs">
-              <span className="font-semibold text-emerald-400">↗ +18.4%</span>
-              <span className="text-[11px] text-slate-400">vs tháng trước</span>
+              <span className="font-semibold text-emerald-400">{hasData ? '↗ +18.4%' : '0%'}</span>
+              <span className="text-[11px] text-slate-400">{hasData ? 'vs tháng trước' : 'Chưa có lượt xem'}</span>
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
@@ -240,7 +241,7 @@ export const AnalyticsDashboardView: React.FC<AnalyticsDashboardViewProps> = ({ 
             </div>
             {/* Sparkline curve */}
             <svg className="w-16 h-5 text-emerald-400 stroke-current fill-none stroke-[2]" viewBox="0 0 64 20">
-              <path d="M 0 16 Q 16 14 32 10 T 64 2" />
+              <path d={hasData ? "M 0 16 Q 16 14 32 10 T 64 2" : "M 0 18 L 64 18"} />
             </svg>
           </div>
         </div>
@@ -252,11 +253,11 @@ export const AnalyticsDashboardView: React.FC<AnalyticsDashboardViewProps> = ({ 
               KHÁCH GHÉ THĂM (UNIQUE)
             </div>
             <div className="text-2xl font-bold text-white tracking-tight">
-              32,450
+              {hasData ? '3,450' : '0'}
             </div>
             <div className="flex items-center gap-1.5 text-xs">
-              <span className="font-semibold text-emerald-400">↗ +12.1%</span>
-              <span className="text-[11px] text-slate-400">vs chu kỳ cũ</span>
+              <span className="font-semibold text-emerald-400">{hasData ? '↗ +12.1%' : '0%'}</span>
+              <span className="text-[11px] text-slate-400">{hasData ? 'vs chu kỳ cũ' : 'Chưa ghi nhận'}</span>
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
@@ -264,7 +265,7 @@ export const AnalyticsDashboardView: React.FC<AnalyticsDashboardViewProps> = ({ 
               <Users className="w-4 h-4" />
             </div>
             <svg className="w-16 h-5 text-cyan-400 stroke-current fill-none stroke-[2]" viewBox="0 0 64 20">
-              <path d="M 0 18 Q 20 16 40 12 T 64 4" />
+              <path d={hasData ? "M 0 18 Q 20 16 40 12 T 64 4" : "M 0 18 L 64 18"} />
             </svg>
           </div>
         </div>
@@ -276,12 +277,12 @@ export const AnalyticsDashboardView: React.FC<AnalyticsDashboardViewProps> = ({ 
               TỶ LỆ CLICK DEMO (CTR)
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-bold text-white tracking-tight">23.0%</span>
-              <span className="text-xs text-slate-400 font-mono">34.1k hits</span>
+              <span className="text-2xl font-bold text-white tracking-tight">{hasData ? '23.0%' : '0.0%'}</span>
+              <span className="text-xs text-slate-400 font-mono">{hasData ? '3.4k hits' : '0 hits'}</span>
             </div>
             <div className="flex items-center gap-1.5 text-xs">
-              <span className="font-semibold text-emerald-400">↗ +5.4%</span>
-              <span className="text-[11px] text-slate-400">chuyển đổi tốt</span>
+              <span className="font-semibold text-emerald-400">{hasData ? '↗ +5.4%' : '0%'}</span>
+              <span className="text-[11px] text-slate-400">{hasData ? 'chuyển đổi tốt' : 'Sẵn sàng'}</span>
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
@@ -289,7 +290,7 @@ export const AnalyticsDashboardView: React.FC<AnalyticsDashboardViewProps> = ({ 
               <Laptop className="w-4 h-4" />
             </div>
             <svg className="w-16 h-5 text-purple-400 stroke-current fill-none stroke-[2]" viewBox="0 0 64 20">
-              <path d="M 0 16 Q 16 12 32 14 T 64 6" />
+              <path d={hasData ? "M 0 16 Q 16 12 32 14 T 64 6" : "M 0 18 L 64 18"} />
             </svg>
           </div>
         </div>
@@ -301,11 +302,11 @@ export const AnalyticsDashboardView: React.FC<AnalyticsDashboardViewProps> = ({ 
               THỜI GIAN ONSITE TRUNG BÌNH
             </div>
             <div className="text-2xl font-bold text-white tracking-tight">
-              3m 45s
+              {hasData ? '3m 45s' : '0s'}
             </div>
             <div className="flex items-center gap-1.5 text-xs">
-              <span className="font-semibold text-emerald-400">↗ +0.8%</span>
-              <span className="text-[11px] text-slate-400">duy trì ổn định</span>
+              <span className="font-semibold text-emerald-400">{hasData ? '↗ +0.8%' : '0%'}</span>
+              <span className="text-[11px] text-slate-400">{hasData ? 'duy trì ổn định' : 'Chưa có phiên'}</span>
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
@@ -313,7 +314,7 @@ export const AnalyticsDashboardView: React.FC<AnalyticsDashboardViewProps> = ({ 
               <Clock className="w-4 h-4" />
             </div>
             <svg className="w-16 h-5 text-emerald-400 stroke-current fill-none stroke-[2]" viewBox="0 0 64 20">
-              <path d="M 0 15 Q 20 13 40 14 T 64 12" />
+              <path d={hasData ? "M 0 15 Q 20 13 40 14 T 64 12" : "M 0 18 L 64 18"} />
             </svg>
           </div>
         </div>
@@ -351,114 +352,127 @@ export const AnalyticsDashboardView: React.FC<AnalyticsDashboardViewProps> = ({ 
 
         {/* SVG Interactive Chart Canvas */}
         <div className="relative pt-6 pb-2">
-          
-          {/* Spike Tooltip Card (at 18 Th10) */}
-          {activeTooltip && (
-            <div className="absolute left-[54%] top-[14%] -translate-x-1/2 z-20 pointer-events-auto transition-transform hover:scale-105">
-              <div className="p-3 rounded-xl bg-[#0d1624]/95 border border-emerald-500/40 shadow-2xl backdrop-blur-md space-y-1.5 text-xs min-w-[210px]">
-                <div className="flex items-center justify-between gap-2 text-emerald-400 font-bold text-[11px]">
-                  <div className="flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Phát hành Synapse AI v2.4</span>
+          {!hasData ? (
+            <div className="h-64 flex flex-col items-center justify-center text-center p-6 text-slate-500">
+              <div className="w-12 h-12 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-center mb-3 text-slate-400">
+                <Eye className="w-6 h-6" />
+              </div>
+              <div className="text-sm font-semibold text-slate-300">Chưa có dữ liệu lưu lượng truy cập</div>
+              <p className="text-xs text-slate-500 mt-1 max-w-sm">
+                Hệ thống chưa ghi nhận lượt xem trang hoặc click demo nào. Dữ liệu thời gian thực sẽ hiển thị tại đây khi có người truy cập.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Spike Tooltip Card (at 18 Th10) */}
+              {activeTooltip && (
+                <div className="absolute left-[54%] top-[14%] -translate-x-1/2 z-20 pointer-events-auto transition-transform hover:scale-105">
+                  <div className="p-3 rounded-xl bg-[#0d1624]/95 border border-emerald-500/40 shadow-2xl backdrop-blur-md space-y-1.5 text-xs min-w-[210px]">
+                    <div className="flex items-center justify-between gap-2 text-emerald-400 font-bold text-[11px]">
+                      <div className="flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Phát hành Synapse AI v2.4</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTooltip(false)}
+                        className="text-slate-400 hover:text-white"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between text-slate-300 text-[11px] font-mono">
+                      <span>Views: <strong className="text-white">7,849</strong></span>
+                      <span className="text-slate-500">|</span>
+                      <span>Demos: <strong className="text-cyan-400">2,110</strong></span>
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      Ngày 18 Tháng 10 • Tăng đột biến 300%
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTooltip(false)}
-                    className="text-slate-400 hover:text-white"
-                  >
-                    ×
-                  </button>
+                  <div className="w-2.5 h-2.5 bg-[#0d1624] border-r border-b border-emerald-500/40 rotate-45 mx-auto -mt-1.5" />
                 </div>
-                <div className="flex items-center justify-between text-slate-300 text-[11px] font-mono">
-                  <span>Views: <strong className="text-white">7,849</strong></span>
-                  <span className="text-slate-500">|</span>
-                  <span>Demos: <strong className="text-cyan-400">2,110</strong></span>
-                </div>
-                <div className="text-[10px] text-slate-400">
-                  Ngày 18 Tháng 10 • Tăng đột biến 300%
+              )}
+
+              {/* SVG Canvas */}
+              <div className="w-full h-64 relative">
+                <svg className="w-full h-full overflow-visible" viewBox="0 0 800 240" preserveAspectRatio="none">
+                  <defs>
+                    {/* Gradient for Pageviews (Green) */}
+                    <linearGradient id="pageviewsGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.28" />
+                      <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+                    </linearGradient>
+
+                    {/* Gradient for Demo Clicks (Cyan) */}
+                    <linearGradient id="demosGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.32" />
+                      <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Grid Lines */}
+                  <line x1="0" y1="40" x2="800" y2="40" stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" />
+                  <line x1="0" y1="90" x2="800" y2="90" stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" />
+                  <line x1="0" y1="140" x2="800" y2="140" stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" />
+                  <line x1="0" y1="190" x2="800" y2="190" stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" />
+                  <line x1="0" y1="230" x2="800" y2="230" stroke="rgba(255,255,255,0.06)" />
+
+                  {/* Area 1: Pageviews (Green) */}
+                  <path
+                    d="M 0 170 C 120 160 220 140 320 120 C 380 110 440 40 480 40 C 520 40 560 110 640 95 C 720 80 760 70 800 60 L 800 230 L 0 230 Z"
+                    fill="url(#pageviewsGrad)"
+                  />
+                  <path
+                    d="M 0 170 C 120 160 220 140 320 120 C 380 110 440 40 480 40 C 520 40 560 110 640 95 C 720 80 760 70 800 60"
+                    fill="none"
+                    stroke="#34d399"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+
+                  {/* Area 2: Demo Clicks (Cyan) */}
+                  <path
+                    d="M 0 195 C 120 190 220 180 320 165 C 380 155 440 90 480 85 C 520 80 560 140 640 125 C 720 110 760 105 800 95 L 800 230 L 0 230 Z"
+                    fill="url(#demosGrad)"
+                  />
+                  <path
+                    d="M 0 195 C 120 190 220 180 320 165 C 380 155 440 90 480 85 C 520 80 560 140 640 125 C 720 110 760 105 800 95"
+                    fill="none"
+                    stroke="#22d3ee"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+
+                  {/* Spike Vertical Marker at x=480 (18 Th10) */}
+                  <line x1="480" y1="30" x2="480" y2="230" stroke="#10b981" strokeWidth="1.5" strokeDasharray="3 3" />
+                  <circle cx="480" cy="40" r="5" fill="#10b981" stroke="#070b12" strokeWidth="2" />
+                  <circle cx="480" cy="85" r="5" fill="#06b6d4" stroke="#070b12" strokeWidth="2" />
+                </svg>
+
+                {/* Y-Axis scale labels */}
+                <div className="absolute left-2 top-0 bottom-6 flex flex-col justify-between text-[10px] font-mono text-slate-500 pointer-events-none">
+                  <span>8,000</span>
+                  <span>6,000</span>
+                  <span>4,000</span>
+                  <span>2,000</span>
+                  <span>0</span>
                 </div>
               </div>
-              <div className="w-2.5 h-2.5 bg-[#0d1624] border-r border-b border-emerald-500/40 rotate-45 mx-auto -mt-1.5" />
-            </div>
+
+              {/* X-Axis date labels */}
+              <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-2 px-2">
+                <span>01 Th10</span>
+                <span>06 Th10</span>
+                <span>12 Th10</span>
+                <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                  18 Th10 (Spike)
+                </span>
+                <span>24 Th10</span>
+                <span>30 Th10</span>
+              </div>
+            </>
           )}
-
-          {/* SVG Canvas */}
-          <div className="w-full h-64 relative">
-            <svg className="w-full h-full overflow-visible" viewBox="0 0 800 240" preserveAspectRatio="none">
-              <defs>
-                {/* Gradient for Pageviews (Green) */}
-                <linearGradient id="pageviewsGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.28" />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-                </linearGradient>
-
-                {/* Gradient for Demo Clicks (Cyan) */}
-                <linearGradient id="demosGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.32" />
-                  <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
-                </linearGradient>
-              </defs>
-
-              {/* Grid Lines */}
-              <line x1="0" y1="40" x2="800" y2="40" stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" />
-              <line x1="0" y1="90" x2="800" y2="90" stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" />
-              <line x1="0" y1="140" x2="800" y2="140" stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" />
-              <line x1="0" y1="190" x2="800" y2="190" stroke="rgba(255,255,255,0.04)" strokeDasharray="4 4" />
-              <line x1="0" y1="230" x2="800" y2="230" stroke="rgba(255,255,255,0.06)" />
-
-              {/* Area 1: Pageviews (Green) */}
-              <path
-                d="M 0 170 C 120 160 220 140 320 120 C 380 110 440 40 480 40 C 520 40 560 110 640 95 C 720 80 760 70 800 60 L 800 230 L 0 230 Z"
-                fill="url(#pageviewsGrad)"
-              />
-              <path
-                d="M 0 170 C 120 160 220 140 320 120 C 380 110 440 40 480 40 C 520 40 560 110 640 95 C 720 80 760 70 800 60"
-                fill="none"
-                stroke="#34d399"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              />
-
-              {/* Area 2: Demo Clicks (Cyan) */}
-              <path
-                d="M 0 195 C 120 190 220 180 320 165 C 380 155 440 90 480 85 C 520 80 560 140 640 125 C 720 110 760 105 800 95 L 800 230 L 0 230 Z"
-                fill="url(#demosGrad)"
-              />
-              <path
-                d="M 0 195 C 120 190 220 180 320 165 C 380 155 440 90 480 85 C 520 80 560 140 640 125 C 720 110 760 105 800 95"
-                fill="none"
-                stroke="#22d3ee"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              />
-
-              {/* Spike Vertical Marker at x=480 (18 Th10) */}
-              <line x1="480" y1="30" x2="480" y2="230" stroke="#10b981" strokeWidth="1.5" strokeDasharray="3 3" />
-              <circle cx="480" cy="40" r="5" fill="#10b981" stroke="#070b12" strokeWidth="2" />
-              <circle cx="480" cy="85" r="5" fill="#06b6d4" stroke="#070b12" strokeWidth="2" />
-            </svg>
-
-            {/* Y-Axis scale labels */}
-            <div className="absolute left-2 top-0 bottom-6 flex flex-col justify-between text-[10px] font-mono text-slate-500 pointer-events-none">
-              <span>8,000</span>
-              <span>6,000</span>
-              <span>4,000</span>
-              <span>2,000</span>
-              <span>0</span>
-            </div>
-          </div>
-
-          {/* X-Axis date labels */}
-          <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-2 px-2">
-            <span>01 Th10</span>
-            <span>06 Th10</span>
-            <span>12 Th10</span>
-            <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-              18 Th10 (Spike)
-            </span>
-            <span>24 Th10</span>
-            <span>30 Th10</span>
-          </div>
         </div>
       </div>
 
@@ -482,30 +496,36 @@ export const AnalyticsDashboardView: React.FC<AnalyticsDashboardViewProps> = ({ 
           </div>
 
           {/* Progress list */}
-          <div className="space-y-3.5 text-xs">
-            {referrers.map((item, idx) => (
-              <div key={idx} className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${item.color}`} />
-                    <span className="text-slate-300 font-medium">{item.name}</span>
+          {referrers.length === 0 ? (
+            <div className="py-8 text-center text-slate-500 text-xs">
+              Chưa có dữ liệu kênh lưu lượng truy cập
+            </div>
+          ) : (
+            <div className="space-y-3.5 text-xs">
+              {referrers.map((item, idx) => (
+                <div key={idx} className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${item.color}`} />
+                      <span className="text-slate-300 font-medium">{item.name}</span>
+                    </div>
+                    <div className="font-mono text-slate-400 text-[11px]">
+                      <span className="text-white font-semibold">{item.percentage}%</span>{' '}
+                      <span>({item.count})</span>
+                    </div>
                   </div>
-                  <div className="font-mono text-slate-400 text-[11px]">
-                    <span className="text-white font-semibold">{item.percentage}%</span>{' '}
-                    <span>({item.count})</span>
-                  </div>
-                </div>
 
-                {/* Bar */}
-                <div className="w-full h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${item.color}`}
-                    style={{ width: `${item.percentage}%` }}
-                  />
+                  {/* Bar */}
+                  <div className="w-full h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${item.color}`}
+                      style={{ width: `${item.percentage}%` }}
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Bounce rate box */}
           <div className="p-3 rounded-xl bg-[#090e17] border border-white/[0.05] flex items-center justify-between text-xs mt-2">
@@ -514,7 +534,11 @@ export const AnalyticsDashboardView: React.FC<AnalyticsDashboardViewProps> = ({ 
               <span>Tỷ lệ thoát trang (Bounce Rate):</span>
             </div>
             <div className="font-mono font-bold text-emerald-400">
-              28.4% <span className="font-sans text-xs font-normal text-emerald-300">(Tốt)</span>
+              {hasData ? (
+                <>28.4% <span className="font-sans text-xs font-normal text-emerald-300">(Tốt)</span></>
+              ) : (
+                <span className="text-slate-500 font-sans font-normal">0.0%</span>
+              )}
             </div>
           </div>
         </div>
@@ -530,14 +554,16 @@ export const AnalyticsDashboardView: React.FC<AnalyticsDashboardViewProps> = ({ 
                 Xếp hạng theo sức hút tương tác và độ quan tâm của cộng đồng
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => onShowToast('Xem toàn bộ bảng xếp hạng 18 dự án!')}
-              className="text-xs text-cyan-400 hover:text-cyan-300 font-medium flex items-center gap-1 transition cursor-pointer"
-            >
-              <span>Chi tiết</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
-            </button>
+            {topProjects.length > 0 && (
+              <button
+                type="button"
+                onClick={() => onShowToast(`Xem toàn bộ bảng xếp hạng ${topProjects.length} dự án!`)}
+                className="text-xs text-cyan-400 hover:text-cyan-300 font-medium flex items-center gap-1 transition cursor-pointer"
+              >
+                <span>Chi tiết</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Projects Table */}
@@ -553,65 +579,73 @@ export const AnalyticsDashboardView: React.FC<AnalyticsDashboardViewProps> = ({ 
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.03]">
-                {topProjects.map((proj) => (
-                  <tr key={proj.id} className="hover:bg-white/[0.02] transition">
-                    {/* Project info */}
-                    <td className="py-3 pr-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/10 shrink-0 bg-slate-800">
-                          <img
-                            src={proj.image}
-                            alt={proj.name}
-                            onError={(e) => {
-                              (e.target as HTMLElement).style.display = 'none';
-                            }}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-bold text-white tracking-tight truncate flex items-center gap-1">
-                            <span>{proj.name}</span>
-                            {proj.isHot && (
-                              <Flame className="w-3 h-3 text-emerald-400 shrink-0" />
-                            )}
-                          </div>
-                          <div className="text-[10px] text-slate-400 font-mono truncate">
-                            {proj.version}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Views */}
-                    <td className="py-3 px-2 text-right font-mono font-medium text-slate-300">
-                      {proj.views}
-                    </td>
-
-                    {/* Live Demo */}
-                    <td className="py-3 px-2 text-right font-mono font-bold text-cyan-400">
-                      {proj.demos}
-                    </td>
-
-                    {/* Stars */}
-                    <td className="py-3 px-2 text-right font-mono text-amber-400">
-                      ★ {proj.stars}
-                    </td>
-
-                    {/* Growth */}
-                    <td className="py-3 pl-2 text-right font-mono font-bold text-emerald-400">
-                      {proj.growth}
+                {topProjects.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-slate-500 font-sans">
+                      Chưa có dự án nào. Dữ liệu sẽ tự động hiển thị khi bạn đăng tải sản phẩm mới.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  topProjects.map((proj) => (
+                    <tr key={proj.id} className="hover:bg-white/[0.02] transition">
+                      {/* Project info */}
+                      <td className="py-3 pr-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/10 shrink-0 bg-slate-800">
+                            <img
+                              src={proj.image}
+                              alt={proj.name}
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-bold text-white tracking-tight truncate flex items-center gap-1">
+                              <span>{proj.name}</span>
+                              {proj.isHot && (
+                                <Flame className="w-3 h-3 text-emerald-400 shrink-0" />
+                              )}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono truncate">
+                              {proj.version}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Views */}
+                      <td className="py-3 px-2 text-right font-mono font-medium text-slate-300">
+                        {proj.views}
+                      </td>
+
+                      {/* Live Demo */}
+                      <td className="py-3 px-2 text-right font-mono font-bold text-cyan-400">
+                        {proj.demos}
+                      </td>
+
+                      {/* Stars */}
+                      <td className="py-3 px-2 text-right font-mono text-amber-400">
+                        ★ {proj.stars}
+                      </td>
+
+                      {/* Growth */}
+                      <td className="py-3 pl-2 text-right font-mono font-bold text-emerald-400">
+                        {proj.growth}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
 
           {/* Table Footer status */}
           <div className="pt-2 border-t border-white/[0.04] flex items-center justify-between text-[11px] text-slate-400 font-mono">
-            <span>Hiển thị 3 / 18 dự án active</span>
+            <span>Hiển thị {topProjects.length} / {products.length} dự án active</span>
             <span className="text-emerald-400 font-semibold">
-              Tốc độ chuyển đổi kho code: 31.4%
+              Tốc độ chuyển đổi kho code: {hasData ? '31.4%' : '0%'}
             </span>
           </div>
         </div>
@@ -648,52 +682,62 @@ export const AnalyticsDashboardView: React.FC<AnalyticsDashboardViewProps> = ({ 
                   strokeWidth="8"
                   fill="transparent"
                 />
-                {/* 82% Desktop (Emerald) */}
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="38"
-                  className="stroke-emerald-400"
-                  strokeWidth="8"
-                  strokeDasharray="238.76"
-                  strokeDashoffset="42.97"
-                  strokeLinecap="round"
-                  fill="transparent"
-                />
-                {/* 16% Mobile (Cyan) */}
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="38"
-                  className="stroke-cyan-400"
-                  strokeWidth="8"
-                  strokeDasharray="238.76"
-                  strokeDashoffset="200.55"
-                  strokeLinecap="round"
-                  fill="transparent"
-                  transform="rotate(295 50 50)"
-                />
+                {hasData && (
+                  <>
+                    {/* 82% Desktop (Emerald) */}
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="38"
+                      className="stroke-emerald-400"
+                      strokeWidth="8"
+                      strokeDasharray="238.76"
+                      strokeDashoffset="42.97"
+                      strokeLinecap="round"
+                      fill="transparent"
+                    />
+                    {/* 16% Mobile (Cyan) */}
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="38"
+                      className="stroke-cyan-400"
+                      strokeWidth="8"
+                      strokeDasharray="238.76"
+                      strokeDashoffset="200.55"
+                      strokeLinecap="round"
+                      fill="transparent"
+                      transform="rotate(295 50 50)"
+                    />
+                  </>
+                )}
               </svg>
 
               <div className="absolute flex flex-col items-center justify-center text-center">
-                <span className="text-2xl font-black text-white tracking-tight">82%</span>
-                <span className="text-[9px] font-mono tracking-wider uppercase text-slate-400">DESKTOP</span>
+                <span className="text-2xl font-black text-white tracking-tight">{hasData ? '82%' : '0%'}</span>
+                <span className="text-[9px] font-mono tracking-wider uppercase text-slate-400">{hasData ? 'DESKTOP' : 'TRỐNG'}</span>
               </div>
             </div>
           </div>
 
           {/* Breakdown items */}
-          <div className="space-y-2 text-xs pt-1">
-            {devices.map((d, i) => (
-              <div key={i} className="flex items-center justify-between text-[11px]">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${d.color.split(' ')[1]}`} />
-                  <span className="text-slate-300">{d.name}</span>
+          {devices.length === 0 ? (
+            <div className="py-2 text-center text-slate-500 text-[11px]">
+              Chưa có dữ liệu thiết bị truy cập
+            </div>
+          ) : (
+            <div className="space-y-2 text-xs pt-1">
+              {devices.map((d, i) => (
+                <div key={i} className="flex items-center justify-between text-[11px]">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${d.color.split(' ')[1]}`} />
+                    <span className="text-slate-300">{d.name}</span>
+                  </div>
+                  <span className="font-mono font-bold text-white">{d.percentage}%</span>
                 </div>
-                <span className="font-mono font-bold text-white">{d.percentage}%</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* CARD 2: HỆ ĐIỀU HÀNH & TRÌNH DUYỆT */}
@@ -710,27 +754,33 @@ export const AnalyticsDashboardView: React.FC<AnalyticsDashboardViewProps> = ({ 
             </div>
           </div>
 
-          <div className="space-y-4 text-xs pt-1">
-            {runtimes.map((rt, i) => (
-              <div key={i} className="space-y-1.5 p-2.5 rounded-xl bg-[#090e17] border border-white/[0.04]">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-200 font-medium">{rt.name}</span>
-                  <span className="font-mono font-bold text-white">{rt.percentage}%</span>
+          {runtimes.length === 0 ? (
+            <div className="py-8 text-center text-slate-500 text-xs">
+              Chưa có dữ liệu môi trường runtime
+            </div>
+          ) : (
+            <div className="space-y-4 text-xs pt-1">
+              {runtimes.map((rt, i) => (
+                <div key={i} className="space-y-1.5 p-2.5 rounded-xl bg-[#090e17] border border-white/[0.04]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-200 font-medium">{rt.name}</span>
+                    <span className="font-mono font-bold text-white">{rt.percentage}%</span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${rt.color}`}
+                      style={{ width: `${rt.percentage}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${rt.color}`}
-                    style={{ width: `${rt.percentage}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Sub Engine telemetry */}
           <div className="pt-2 border-t border-white/[0.04] flex items-center justify-between text-[11px] text-slate-400 font-mono">
-            <span>WebKit Engine: 62%</span>
-            <span>Blink Engine: 34%</span>
+            <span>WebKit Engine: {hasData ? '62%' : '0%'}</span>
+            <span>Blink Engine: {hasData ? '34%' : '0%'}</span>
           </div>
         </div>
 
@@ -748,35 +798,41 @@ export const AnalyticsDashboardView: React.FC<AnalyticsDashboardViewProps> = ({ 
             </div>
           </div>
 
-          <div className="space-y-3 text-xs pt-1">
-            {geos.map((g, i) => (
-              <div key={i} className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-white/[0.06] text-slate-300">
-                      {g.code}
-                    </span>
-                    <span className="text-slate-200 font-medium">{g.name}</span>
+          {geos.length === 0 ? (
+            <div className="py-8 text-center text-slate-500 text-xs">
+              Chưa có dữ liệu phân bổ địa lý
+            </div>
+          ) : (
+            <div className="space-y-3 text-xs pt-1">
+              {geos.map((g, i) => (
+                <div key={i} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-white/[0.06] text-slate-300">
+                        {g.code}
+                      </span>
+                      <span className="text-slate-200 font-medium">{g.name}</span>
+                    </div>
+                    <span className="font-mono font-bold text-white">{g.percentage}%</span>
                   </div>
-                  <span className="font-mono font-bold text-white">{g.percentage}%</span>
+                  <div className="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${g.color}`}
+                      style={{ width: `${g.percentage}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${g.color}`}
-                    style={{ width: `${g.percentage}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Hiring recruit alert box */}
           <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-between text-xs text-emerald-300 mt-2">
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span className="text-[11px]">Tuyển dụng tech từ US/SG:</span>
+              <span className={`w-2 h-2 rounded-full ${hasData ? 'bg-emerald-400' : 'bg-slate-500'}`} />
+              <span className="text-[11px]">Tuyển dụng tech:</span>
             </div>
-            <span className="font-mono font-bold text-white">14 thư mời</span>
+            <span className="font-mono font-bold text-white">{hasData ? '14 thư mời' : '0 thư mời'}</span>
           </div>
         </div>
 
