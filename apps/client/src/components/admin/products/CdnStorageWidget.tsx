@@ -1,7 +1,39 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Database } from 'lucide-react';
 
 export const CdnStorageWidget: React.FC = () => {
+  const [productsCount, setProductsCount] = useState<number>(() => {
+    try {
+      const raw = localStorage.getItem('devfolio_products');
+      if (raw) return JSON.parse(raw).length;
+    } catch {
+      // ignore
+    }
+    return 0;
+  });
+
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const raw = localStorage.getItem('devfolio_products');
+        setProductsCount(raw ? JSON.parse(raw).length : 0);
+      } catch {
+        // ignore
+      }
+    };
+
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('devfolio_products_updated', handleSync);
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('devfolio_products_updated', handleSync);
+    };
+  }, []);
+
+  const hasData = productsCount > 0;
+  const usedGb = hasData ? (productsCount * 0.45).toFixed(1) : '0.0';
+  const percentage = hasData ? ((parseFloat(usedGb) / 500.0) * 100).toFixed(1) : '0.0';
+
   return (
     <div className="p-5 rounded-2xl bg-[#090e17] border border-white/[0.06] space-y-4">
       {/* Header */}
@@ -26,10 +58,13 @@ export const CdnStorageWidget: React.FC = () => {
       <div className="space-y-1.5">
         <div className="flex justify-between text-[11px] font-mono">
           <span className="text-slate-400">Bộ nhớ Cloudflare R2 đã dùng:</span>
-          <span className="text-white font-bold">142.8 GB / 500.0 GB (28.5%)</span>
+          <span className="text-white font-bold">{usedGb} GB / 500.0 GB ({percentage}%)</span>
         </div>
         <div className="h-2 rounded-full bg-slate-800/80 overflow-hidden">
-          <div className="h-full bg-emerald-400 rounded-full" style={{ width: '28.5%' }} />
+          <div
+            className="h-full bg-emerald-400 rounded-full transition-all duration-300"
+            style={{ width: `${percentage}%` }}
+          />
         </div>
       </div>
 
@@ -37,13 +72,13 @@ export const CdnStorageWidget: React.FC = () => {
       <div className="grid grid-cols-3 gap-2 pt-1 border-t border-white/[0.05] text-[11px]">
         <div>
           <div className="text-[10px] font-mono text-slate-400">BĂNG THÔNG THÁNG</div>
-          <div className="font-bold text-white font-mono mt-0.5">1.2 TB / 10 TB</div>
-          <div className="text-[10px] text-emerald-400">Tối ưu nén Brotli</div>
+          <div className="font-bold text-white font-mono mt-0.5">{hasData ? '1.2 TB / 10 TB' : '0.0 TB / 10 TB'}</div>
+          <div className="text-[10px] text-emerald-400">{hasData ? 'Tối ưu nén Brotli' : 'Chưa phát sinh'}</div>
         </div>
         <div>
           <div className="text-[10px] font-mono text-slate-400">TỐC ĐỘ TẢI TB</div>
-          <div className="font-bold text-white font-mono mt-0.5">85.4 MB/s</div>
-          <div className="text-[10px] text-emerald-400">Độ trễ TB: 14ms</div>
+          <div className="font-bold text-white font-mono mt-0.5">{hasData ? '85.4 MB/s' : '0 MB/s'}</div>
+          <div className="text-[10px] text-emerald-400">{hasData ? 'Độ trễ TB: 14ms' : 'Sẵn sàng'}</div>
         </div>
         <div>
           <div className="text-[10px] font-mono text-slate-400">BẢO VỆ TẢI VỀ</div>

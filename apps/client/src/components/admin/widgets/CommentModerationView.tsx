@@ -65,117 +65,10 @@ export interface ModerationCommentItem {
   isPinned?: boolean;
 }
 
-const INITIAL_MODERATION_ITEMS: ModerationCommentItem[] = [
-  {
-    id: 'comm-1',
-    author: {
-      name: 'AlexCryptoBot_99',
-      isBot: true,
-      email: 'alex.eth.promotions@tempmail.io',
-      handle: 'alex.eth.promotions@tempmail.io',
-    },
-    project: {
-      name: 'Synapse AI',
-      slug: 'synapse-ai',
-    },
-    timeAgo: '2 phút trước',
-    timestamp: '10:14:02',
-    content:
-      'Dự án này rất tiềm năng nhưng nếu bạn muốn gia tăng thanh khoản 100x hãy truy cập ngay vào hệ thống phân phối airdrop tự động tại https://synapse-airdrop-claim-tokens.io/claim. Tặng 500 ETH cho 50 ví đầu tiên!',
-    classification: {
-      type: 'phishing',
-      title: 'Cảnh báo: Phát hiện liên kết lừa đảo tài chính / Crypto Phishing (98.6% Spam Score)',
-      badgeText: 'HIGH RISK',
-      spamScore: '98.6%',
-      severity: 'high',
-    },
-    status: 'pending',
-  },
-  {
-    id: 'comm-2',
-    author: {
-      name: 'Trần Mai Anh',
-      avatarUrl: '/images/alex-avatar.jpg',
-      verifiedBadge: 'Thành viên xác thực',
-      handle: '@maianh_dev',
-      email: 'maianh.tran@techcorp.vn',
-    },
-    project: {
-      name: 'ChromaPalette UI',
-      slug: 'chromapalette-ui',
-    },
-    timeAgo: '14 phút trước',
-    timestamp: '09:45:18',
-    rating: 5.0,
-    content:
-      'Bộ token màu chuyển đổi mượt mà tuyệt vời! Tuy nhiên hàm contrast checker hiện tại đang dùng thuật toán WCAG2 thay vì APCA mới. Mình đã test thử đoạn memoize này giúp tăng tốc độ render bảng màu lên 40%:',
-    codeSnippet: {
-      filename: 'lib/color/apca-calculator.ts',
-      language: 'TypeScript',
-      code: `export const computeLuminanceRatio = memoize((fg: string, bg: string) => {
-  const yFg = toSRGB(fg);
-  const yBg = toSRGB(bg);
-  return Math.abs(yFg - yBg) * 1.05;
-});`,
-    },
-    classification: {
-      type: 'verified_code',
-      title: 'Độ tin cậy: 99.4% Hợp lệ (Nội dung mã nguồn & đóng góp giá trị)',
-      trustScore: '99.4%',
-      severity: 'success',
-    },
-    status: 'pending',
-  },
-  {
-    id: 'comm-3',
-    author: {
-      name: 'Lê Quang Huy',
-      avatarUrl: '/images/devpulse.jpg',
-      handle: 'lqh.architect@devfolio.io',
-      email: 'lqh.architect@devfolio.io',
-      meta: 'Đã tham gia 1 năm • 14 repos',
-    },
-    project: {
-      name: 'DevPulse Analytics',
-      slug: 'devpulse-analytics',
-    },
-    timeAgo: '42 phút trước',
-    timestamp: '08:22:11',
-    content:
-      'Chào team DevFolio, khi triển khai DevPulse qua Docker compose trên cụm ARM64 (AWS Graviton) mình gặp lỗi build thư viện libvips. Các bạn có kế hoạch phát hành multi-arch image cho v2.5 không?',
-    classification: {
-      type: 'infra_question',
-      title: 'AI Phân loại: Câu hỏi kỹ thuật hạ tầng (Không chứa nội dung độc hại)',
-      severity: 'info',
-    },
-    status: 'pending',
-  },
-  {
-    id: 'comm-4',
-    author: {
-      name: 'Kevin D.',
-      initials: 'KD',
-      initialsColor: 'bg-purple-900/60 text-purple-300 border border-purple-500/40',
-      isNewAccount: true,
-      handle: 'kevin.d.9192@gmail.com',
-      email: 'kevin.d.9192@gmail.com',
-    },
-    project: {
-      name: 'KernelViper',
-      slug: 'kernel-viper',
-    },
-    timeAgo: '1 giờ trước',
-    timestamp: '07:50:00',
-    content:
-      'Source code này có được share bán thương mại không bạn? Nếu cần outsource thêm module kernel eBPF thì liên hệ mình qua Zalo/Telegram số 0988-xxx-xxx với giá rẻ nhất nhé.',
-    classification: {
-      type: 'commercial',
-      title: 'Phát hiện số điện thoại cá nhân & chào mời dịch vụ thương mại',
-      severity: 'warning',
-    },
-    status: 'pending',
-  },
-];
+import { addAuditLog as recordGlobalAuditLog } from '../audit';
+
+// Danh sách bình luận mặc định trống - khi có người dùng tương tác sẽ tự động hiển thị
+const INITIAL_MODERATION_ITEMS: ModerationCommentItem[] = [];
 
 export interface CommentModerationViewProps {
   onShowToast: (message: string) => void;
@@ -183,7 +76,17 @@ export interface CommentModerationViewProps {
 
 export const CommentModerationView: React.FC<CommentModerationViewProps> = ({ onShowToast }) => {
   // Main data state
-  const [items, setItems] = useState<ModerationCommentItem[]>(INITIAL_MODERATION_ITEMS);
+  const [items, setItems] = useState<ModerationCommentItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('devfolio_moderation_items');
+        if (raw) return JSON.parse(raw);
+      } catch {
+        // ignore
+      }
+    }
+    return INITIAL_MODERATION_ITEMS;
+  });
   const [activeTab, setActiveTab] = useState<'pending' | 'all' | 'approved' | 'spam'>('pending');
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState<boolean>(false);
@@ -210,39 +113,59 @@ export const CommentModerationView: React.FC<CommentModerationViewProps> = ({ on
   });
 
   // Audit Log Stream state
-  const [auditStream, setAuditStream] = useState<string[]>([
-    '[10:14:02] rule:anti-phishing > flagged AlexCryptoBot',
-    '[09:45:18] review-approved #466 by @admin',
-    '[08:22:11] sync:discord webhook latency 34ms',
-  ]);
+  const [auditStream, setAuditStream] = useState<string[]>([]);
 
   const addAuditLog = (msg: string) => {
     const time = new Date().toLocaleTimeString('vi-VN', { hour12: false });
     setAuditStream((prev) => [`[${time}] ${msg}`, ...prev.slice(0, 8)]);
   };
 
+  const persistItems = (newItems: ModerationCommentItem[]) => {
+    setItems(newItems);
+    try {
+      localStorage.setItem('devfolio_moderation_items', JSON.stringify(newItems));
+    } catch {
+      // ignore
+    }
+  };
+
   // Actions on comments
   const handleApprove = (id: string, name: string) => {
-    setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, status: 'approved' } : item))
-    );
+    const updated = items.map((item) => (item.id === id ? { ...item, status: 'approved' as const } : item));
+    persistItems(updated);
     addAuditLog(`review-approved #${id} for ${name} by @admin`);
+    recordGlobalAuditLog({
+      action: `Phê duyệt bình luận #${id} của ${name}`,
+      category: 'data',
+      severity: 'success',
+      targetResource: `comments://${id}`,
+    });
     onShowToast(`Đã duyệt thành công bình luận của ${name}!`);
   };
 
   const handleReject = (id: string, name: string) => {
-    setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, status: 'rejected' } : item))
-    );
+    const updated = items.map((item) => (item.id === id ? { ...item, status: 'rejected' as const } : item));
+    persistItems(updated);
     addAuditLog(`rejected-comment #${id} from ${name}`);
+    recordGlobalAuditLog({
+      action: `Từ chối bình luận #${id} của ${name}`,
+      category: 'data',
+      severity: 'warning',
+      targetResource: `comments://${id}`,
+    });
     onShowToast(`Đã từ chối bình luận của ${name}.`);
   };
 
   const handleBlockIpAndSpam = (id: string, name: string) => {
-    setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, status: 'spam' } : item))
-    );
+    const updated = items.map((item) => (item.id === id ? { ...item, status: 'spam' as const } : item));
+    persistItems(updated);
     addAuditLog(`blocked-ip & quarantined spam #${id} (${name})`);
+    recordGlobalAuditLog({
+      action: `Chặn IP & Đánh dấu spam bình luận #${id} (${name})`,
+      category: 'security',
+      severity: 'critical',
+      targetResource: `comments://${id}`,
+    });
     onShowToast(`Đã chặn IP vĩnh viễn và gắn cờ spam cho ${name}!`);
   };
 
@@ -351,9 +274,9 @@ export const CommentModerationView: React.FC<CommentModerationViewProps> = ({ on
               Tổng bình luận
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-white tracking-tight">482</span>
+              <span className="text-2xl font-bold text-white tracking-tight">{items.length}</span>
               <span className="text-[11px] font-semibold text-emerald-400">
-                +18% tuần này
+                {items.length > 0 ? `${items.length} lượt` : '0 lượt'}
               </span>
             </div>
           </div>
@@ -398,8 +321,8 @@ export const CommentModerationView: React.FC<CommentModerationViewProps> = ({ on
               Nghi vấn bot / spam
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-white tracking-tight">12</span>
-              <span className="text-xs text-slate-400">AI chặn 98%</span>
+              <span className="text-2xl font-bold text-white tracking-tight">{items.filter(i => i.status === 'spam').length}</span>
+              <span className="text-xs text-slate-400">AI lọc tự động</span>
             </div>
           </div>
           <div className="w-9 h-9 rounded-xl bg-[#131d2e] border border-white/[0.06] flex items-center justify-center text-amber-400">
@@ -419,8 +342,8 @@ export const CommentModerationView: React.FC<CommentModerationViewProps> = ({ on
               </div>
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-bold text-white tracking-tight">4.9</span>
-              <span className="text-xs text-slate-400">/ 5.0 (239 reviews)</span>
+              <span className="text-2xl font-bold text-white tracking-tight">5.0</span>
+              <span className="text-xs text-slate-400">/ 5.0 ({items.length} reviews)</span>
             </div>
           </div>
           <div className="px-2 py-1 rounded-lg bg-cyan-950/60 border border-cyan-800/50 text-cyan-400 text-[10px] font-bold tracking-wider uppercase text-center leading-tight">
@@ -458,7 +381,7 @@ export const CommentModerationView: React.FC<CommentModerationViewProps> = ({ on
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <span>Tất cả (482)</span>
+            <span>Tất cả ({items.length})</span>
           </button>
 
           <button
@@ -470,7 +393,7 @@ export const CommentModerationView: React.FC<CommentModerationViewProps> = ({ on
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <span>Đã duyệt (466)</span>
+            <span>Đã duyệt ({items.filter(i => i.status === 'approved').length})</span>
           </button>
 
           <button
@@ -482,7 +405,7 @@ export const CommentModerationView: React.FC<CommentModerationViewProps> = ({ on
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <span>Spam (12)</span>
+            <span>Spam ({items.filter(i => i.status === 'spam').length})</span>
           </button>
         </div>
 
@@ -573,10 +496,14 @@ export const CommentModerationView: React.FC<CommentModerationViewProps> = ({ on
         <div className="lg:col-span-8 space-y-4">
           
           {filteredItems.length === 0 ? (
-            <div className="p-12 text-center rounded-2xl bg-[#0c121e] border border-white/[0.06] text-slate-400 space-y-2">
-              <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
-              <div className="text-white font-semibold text-sm">Hàng đợi trống!</div>
-              <p className="text-xs">Không có mục nào trong danh mục đã chọn.</p>
+            <div className="p-14 text-center rounded-2xl bg-[#0c121e] border border-white/[0.06] text-slate-400 space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-slate-500 mx-auto">
+                <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+              </div>
+              <div className="text-white font-semibold text-sm">Hàng đợi kiểm duyệt đang trống</div>
+              <p className="text-xs max-w-md mx-auto leading-relaxed">
+                Không có bình luận hoặc đánh giá nào cần duyệt lúc này. Khi có người dùng gửi bình luận trên các sản phẩm của bạn, hệ thống sẽ lọc và hiển thị tại đây.
+              </p>
             </div>
           ) : (
             filteredItems.map((item) => (

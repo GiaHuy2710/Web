@@ -28,12 +28,36 @@ export const App: React.FC = () => {
   const [selectedTech, setSelectedTech] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<string>('newest');
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [currentView, setCurrentView] = useState<'projects' | 'project-detail' | 'ai-assistant' | 'contact' | 'docs' | 'admin'>('admin');
+
+  // Xác định view ban đầu: Mặc định luôn là 'projects' (Landing page)
+  // Chỉ mở admin khi truy cập trực tiếp hash #admin hoặc query param ?view=admin
+  const getInitialView = (): 'projects' | 'project-detail' | 'ai-assistant' | 'contact' | 'docs' | 'admin' => {
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      const search = window.location.search;
+      const hash = window.location.hash;
+      if (pathname.includes('/admin') || search.includes('view=admin') || hash === '#admin') {
+        return 'admin';
+      }
+    }
+    return 'projects';
+  };
+
+  const [currentView, setCurrentView] = useState<'projects' | 'project-detail' | 'ai-assistant' | 'contact' | 'docs' | 'admin'>(getInitialView);
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isCvOpen, setIsCvOpen] = useState<boolean>(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
+
+  const handleBackToHome = () => {
+    setSelectedProject(null);
+    setCurrentView('projects');
+    if (typeof window !== 'undefined' && window.history.pushState) {
+      window.history.pushState(null, '', '/');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Quản lý trạng thái xác thực người dùng từ session helper
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => authApi.getCurrentUser());
@@ -117,8 +141,7 @@ export const App: React.FC = () => {
 
   const handleNavigateSection = (sectionId: string) => {
     if (sectionId === 'projects') {
-      setSelectedProject(null);
-      setCurrentView('projects');
+      handleBackToHome();
       setTimeout(() => handleExploreProjects(), 50);
     } else if (sectionId === 'about') {
       setIsCvOpen(true);
@@ -137,6 +160,9 @@ export const App: React.FC = () => {
     } else if (sectionId === 'admin') {
       setSelectedProject(null);
       setCurrentView('admin');
+      if (typeof window !== 'undefined' && window.history.pushState) {
+        window.history.pushState(null, '', '/#admin');
+      }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (sectionId === 'login') {
       setAuthTab('login');
@@ -151,11 +177,7 @@ export const App: React.FC = () => {
   if (currentView === 'admin') {
     return (
       <AdminPage 
-        onBackToHome={() => {
-          setSelectedProject(null);
-          setCurrentView('projects');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
+        onBackToHome={handleBackToHome}
         currentUser={currentUser}
       />
     );

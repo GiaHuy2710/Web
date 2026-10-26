@@ -3,9 +3,9 @@ import { PROJECTS_DATA } from './projectsData';
 export const mockData = {
   projects: PROJECTS_DATA,
   stats: {
-    totalProjects: 48,
-    activeUsers: 2490,
-    totalDownloads: '142.8k',
+    totalProjects: 0,
+    activeUsers: 0,
+    totalDownloads: '0',
     uptime: '99.98%',
   },
   categories: [

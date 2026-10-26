@@ -24,11 +24,36 @@ import {
 } from 'lucide-react';
 import { AdminUserMember, UserManagementViewProps } from './types';
 import { INITIAL_USERS } from './mockData';
+import { addAuditLog } from '../audit';
 
 export const UserManagementView: React.FC<UserManagementViewProps> = ({ onShowToast }) => {
-  // Users data state
-  const [users, setUsers] = useState<AdminUserMember[]>(INITIAL_USERS);
-  const [selectedUserId, setSelectedUserId] = useState<string>(INITIAL_USERS[0].id);
+  // Users data state from localStorage or empty
+  const [users, setUsers] = useState<AdminUserMember[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('devfolio_users');
+        if (raw) return JSON.parse(raw);
+      } catch {
+        // ignore
+      }
+    }
+    return INITIAL_USERS;
+  });
+
+  const [selectedUserId, setSelectedUserId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('devfolio_users');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.length > 0) return parsed[0].id;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return INITIAL_USERS[0]?.id || '';
+  });
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
   // Filter & Search states
@@ -58,7 +83,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ onShowTo
 
   // Selected User Object
   const selectedUser = useMemo(() => {
-    return users.find((u) => u.id === selectedUserId) || users[0];
+    return users.find((u) => u.id === selectedUserId) || users[0] || null;
   }, [users, selectedUserId]);
 
   // Filtered Users List
@@ -175,13 +200,25 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ onShowTo
   const handleToggleBanUser = () => {
     if (!selectedUser) return;
     const isCurrentlyBanned = selectedUser.status === 'banned';
-    const newStatus = isCurrentlyBanned ? 'active' : 'banned';
+    const newStatus: 'active' | 'banned' = isCurrentlyBanned ? 'active' : 'banned';
 
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === selectedUser.id ? { ...u, status: newStatus } : u
-      )
+    const updated = users.map((u) =>
+      u.id === selectedUser.id ? { ...u, status: newStatus } : u
     );
+    setUsers(updated);
+    try {
+      localStorage.setItem('devfolio_users', JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+
+    addAuditLog({
+      action: `${newStatus === 'banned' ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}: ${selectedUser.name}`,
+      category: 'security',
+      severity: newStatus === 'banned' ? 'warning' : 'info',
+      details: `Cập nhật trạng thái người dùng ${selectedUser.email} thành ${newStatus}.`,
+      targetResource: `auth://users/${selectedUser.id}`,
+    });
 
     if (newStatus === 'banned') {
       onShowToast(`Đã khóa tài khoản của ${selectedUser.name}!`);
@@ -193,6 +230,12 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ onShowTo
   // Reset Password Action
   const handleResetPassword = () => {
     if (!selectedUser) return;
+    addAuditLog({
+      action: `Gửi email khôi phục mật khẩu: ${selectedUser.email}`,
+      category: 'security',
+      severity: 'info',
+      targetResource: `auth://users/${selectedUser.id}`,
+    });
     onShowToast(`Đã gửi email khôi phục mật khẩu bảo mật tới ${selectedUser.email}`);
   };
 
@@ -208,11 +251,24 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ onShowTo
       badgeColor = 'text-slate-400 bg-white/[0.05] border-white/10';
     }
 
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === selectedUser.id ? { ...u, role: newRole, roleBadgeColor: badgeColor } : u
-      )
+    const updated = users.map((u) =>
+      u.id === selectedUser.id ? { ...u, role: newRole, roleBadgeColor: badgeColor } : u
     );
+    setUsers(updated);
+    try {
+      localStorage.setItem('devfolio_users', JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+
+    addAuditLog({
+      action: `Thay đổi phân quyền của ${selectedUser.name} thành [${newRole}]`,
+      category: 'security',
+      severity: 'warning',
+      details: `Cập nhật vai trò từ ${selectedUser.role} sang ${newRole}.`,
+      targetResource: `auth://users/${selectedUser.id}/role`,
+    });
+
     setIsRoleModalOpen(false);
     onShowToast(`Đã cập nhật phân quyền của ${selectedUser.name} thành "${newRole}"!`);
   };
@@ -242,12 +298,32 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ onShowTo
       activities: [],
     };
 
-    setUsers((prev) => [newUser, ...prev]);
+    const updated = [newUser, ...users];
+    setUsers(updated);
+    try {
+      localStorage.setItem('devfolio_users', JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
     setSelectedUserId(newUser.id);
     setIsInviteModalOpen(false);
     setInviteEmail('');
+
+    addAuditLog({
+      action: `Gửi mã mời thành viên mới: ${newUser.name} (${newUser.email})`,
+      category: 'security',
+      severity: 'info',
+      details: `Vai trò phân bổ: ${newUser.role}`,
+      targetResource: `auth://invites/${newUser.id}`,
+    });
+
     onShowToast(`Đã gửi mã mời thành viên tới ${inviteEmail}!`);
   };
+
+  const totalCount = users.length;
+  const activeCount = users.filter((u) => u.status === 'active').length;
+  const pendingCount = users.filter((u) => u.status === 'pending').length;
+  const bannedCount = users.filter((u) => u.status === 'banned').length;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -263,10 +339,10 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ onShowTo
             </div>
             <div className="flex items-center gap-2.5">
               <span className="text-2xl font-bold text-white tracking-tight">
-                1,842
+                {totalCount}
               </span>
-              <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md">
-                ↗ +12%
+              <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md font-mono">
+                {totalCount > 0 ? `${totalCount} hồ sơ` : 'Trống'}
               </span>
             </div>
           </div>
@@ -279,13 +355,15 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ onShowTo
         <div className="p-4 rounded-2xl bg-[#0d1421] border border-white/[0.07] flex items-center justify-between relative overflow-hidden">
           <div className="space-y-1">
             <div className="text-[11px] font-semibold text-slate-400 tracking-wider uppercase">
-              Đang trực tuyến
+              Đang hoạt động
             </div>
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold text-white tracking-tight">
-                318
+                {activeCount}
               </span>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+              {activeCount > 0 && (
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+              )}
             </div>
           </div>
           <div className="w-10 h-10 rounded-xl bg-[#131d2e] border border-white/[0.06] flex items-center justify-center text-slate-300">
@@ -301,7 +379,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ onShowTo
             </div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-bold text-white tracking-tight">
-                24
+                {pendingCount}
               </span>
               <span className="text-xs text-slate-400">yêu cầu</span>
             </div>
@@ -319,9 +397,9 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ onShowTo
             </div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-bold text-white tracking-tight">
-                9
+                {bannedCount}
               </span>
-              <span className="text-xs text-red-400 font-medium">spam bot</span>
+              <span className="text-xs text-red-400 font-medium">bị hạn chế</span>
             </div>
           </div>
           <div className="w-10 h-10 rounded-xl bg-[#131d2e] border border-white/[0.06] flex items-center justify-center text-slate-300">
@@ -339,7 +417,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ onShowTo
               Quản lý người dùng & Thành viên
             </h1>
             <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-[#131e2f] text-emerald-400 border border-emerald-500/20">
-              1,842 thành viên
+              {users.length} thành viên
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
@@ -657,8 +735,8 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ onShowTo
             {/* Table Pagination */}
             <div className="p-3.5 border-t border-white/[0.06] bg-[#090e17] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
               <div>
-                Hiển thị <span className="text-white font-medium">1 - {filteredUsers.length}</span> trên{' '}
-                <span className="text-white font-medium">1,842</span> người dùng
+                Hiển thị <span className="text-white font-medium">{filteredUsers.length > 0 ? `1 - ${filteredUsers.length}` : '0'}</span> trên{' '}
+                <span className="text-white font-medium">{users.length}</span> người dùng
               </div>
 
               <div className="flex items-center gap-1 font-mono">
@@ -717,7 +795,26 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ onShowTo
         {/* RIGHT: USER DETAIL INSPECTOR (4 COLS) */}
         <div className="lg:col-span-4 space-y-4">
           
-          <div className="p-5 rounded-2xl bg-[#0c121e] border border-white/[0.07] space-y-5">
+          {!selectedUser ? (
+            <div className="p-8 rounded-2xl bg-[#0c121e] border border-white/[0.07] text-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-slate-500 mx-auto">
+                <Users className="w-6 h-6" />
+              </div>
+              <div className="text-white font-bold text-sm">Chưa có người dùng nào được chọn</div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Khi có thành viên đăng ký hoặc bạn gửi thư mời, danh sách và thông tin chi tiết phiên làm việc, lịch sử hoạt động sẽ hiển thị tại đây.
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsInviteModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-gray-950 font-bold text-xs transition shadow-[0_0_15px_rgba(52,211,153,0.3)] mt-2 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Mời thành viên mới</span>
+              </button>
+            </div>
+          ) : (
+            <div className="p-5 rounded-2xl bg-[#0c121e] border border-white/[0.07] space-y-5">
             
             {/* User Header */}
             <div className="flex items-start justify-between gap-3">
@@ -897,6 +994,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({ onShowTo
             </div>
 
           </div>
+          )}
 
           {/* BOTTOM HINT CARD (Keyboard j/k tip) */}
           <div className="p-4 rounded-2xl bg-[#090f1a] border border-white/[0.06] flex items-start gap-3">

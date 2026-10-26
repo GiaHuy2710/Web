@@ -68,108 +68,122 @@ export const ProductTable: React.FC<Props> = ({ products }) => {
 
           {/* Table Body */}
           <tbody className="divide-y divide-white/[0.04]">
-            {products.map((item) => (
-              <tr
-                key={item.id}
-                className="hover:bg-white/[0.02] transition cursor-pointer"
-              >
-                {/* Checkbox */}
-                <td className="p-3.5 pl-4">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.includes(item.id)}
-                    onChange={() => toggleSelectOne(item.id)}
-                    className="rounded border-white/20 bg-slate-900 text-emerald-400 cursor-pointer"
-                  />
-                </td>
-
-                {/* Tên & Slug */}
-                <td className="p-3.5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-[#111724] border border-white/[0.08] flex items-center justify-center shrink-0">
-                      {renderIcon(item.categoryIcon)}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1.5 font-bold text-white">
-                        <span>{item.name}</span>
-                        <span className="text-[10px] font-mono text-slate-400 font-normal">
-                          {item.indexTag}
-                        </span>
-                      </div>
-                      <div className="text-[11px] font-mono text-slate-400">
-                        {item.slug} // {item.code}
-                      </div>
-                    </div>
+            {products.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="py-16 text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-slate-500 mx-auto mb-3">
+                    <Box className="w-6 h-6" />
                   </div>
-                </td>
-
-                {/* Phân loại & Tech stack */}
-                <td className="p-3.5">
-                  <div className="space-y-1">
-                    <div className="text-slate-300 font-medium flex items-center gap-1">
-                      {item.categoryLabel}
-                    </div>
-                    <div className="flex flex-wrap gap-1 text-[10px] font-mono">
-                      {item.techStack.map((tech) => (
-                        <span
-                          key={tech}
-                          className="px-1.5 py-0.2 rounded bg-white/[0.05] border border-white/[0.07] text-slate-300"
-                        >
-                          {tech}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </td>
-
-                {/* SemVer */}
-                <td className="p-3.5">
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-md font-mono text-[11px] font-bold border ${
-                      item.versionType === 'stable'
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                        : item.versionType === 'rc'
-                        ? 'bg-teal-500/10 text-teal-300 border-teal-500/30'
-                        : 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30'
-                    }`}
-                  >
-                    {item.version}
-                  </span>
-                </td>
-
-                {/* Lượt tải */}
-                <td className="p-3.5">
-                  <div className="font-bold text-white">{item.downloads}</div>
-                  <div className="text-[11px] text-slate-400 font-mono">
-                    {item.subStats}
-                  </div>
-                </td>
-
-                {/* Tình trạng */}
-                <td className="p-3.5">
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
-                      item.status === 'active'
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
-                        : item.status === 'draft'
-                        ? 'bg-white/[0.05] text-slate-400 border-white/[0.08]'
-                        : 'bg-amber-500/10 text-amber-300 border-amber-500/25'
-                    }`}
-                  >
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        item.status === 'active'
-                          ? 'bg-emerald-400'
-                          : item.status === 'draft'
-                          ? 'bg-slate-400'
-                          : 'bg-amber-400'
-                      }`}
-                    />
-                    <span>{item.statusLabel}</span>
-                  </span>
+                  <div className="text-white font-bold text-sm">Kho sản phẩm hiện đang trống</div>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto mt-1 leading-relaxed">
+                    Chưa có công cụ, ứng dụng web hoặc game nào được lưu trữ. Hãy nhấn &quot;Đăng tải mới&quot; để tạo sản phẩm đầu tiên của bạn!
+                  </p>
                 </td>
               </tr>
-            ))}
+            ) : (
+              products.map((item) => (
+                <tr
+                  key={item.id}
+                  className="hover:bg-white/[0.02] transition cursor-pointer"
+                >
+                  {/* Checkbox */}
+                  <td className="p-3.5 pl-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(item.id)}
+                      onChange={() => toggleSelectOne(item.id)}
+                      className="rounded border-white/20 bg-slate-900 text-emerald-400 cursor-pointer"
+                    />
+                  </td>
+
+                  {/* Tên & Slug */}
+                  <td className="p-3.5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-[#111724] border border-white/[0.08] flex items-center justify-center shrink-0">
+                        {renderIcon(item.categoryIcon)}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5 font-bold text-white">
+                          <span>{item.name}</span>
+                          <span className="text-[10px] font-mono text-slate-400 font-normal">
+                            {item.indexTag}
+                          </span>
+                        </div>
+                        <div className="text-[11px] font-mono text-slate-400">
+                          {item.slug} // {item.code}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Phân loại & Tech stack */}
+                  <td className="p-3.5">
+                    <div className="space-y-1">
+                      <div className="text-slate-300 font-medium flex items-center gap-1">
+                        {item.categoryLabel}
+                      </div>
+                      <div className="flex flex-wrap gap-1 text-[10px] font-mono">
+                        {item.techStack.map((tech) => (
+                          <span
+                            key={tech}
+                            className="px-1.5 py-0.2 rounded bg-white/[0.05] border border-white/[0.07] text-slate-300"
+                          >
+                            {tech}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* SemVer */}
+                  <td className="p-3.5">
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-md font-mono text-[11px] font-bold border ${
+                        item.versionType === 'stable'
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                          : item.versionType === 'rc'
+                          ? 'bg-teal-500/10 text-teal-300 border-teal-500/30'
+                          : 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30'
+                      }`}
+                    >
+                      {item.version}
+                    </span>
+                  </td>
+
+                  {/* Lượt tải */}
+                  <td className="p-3.5">
+                    <div className="font-bold text-white">{item.downloads}</div>
+                    <div className="text-[11px] text-slate-400 font-mono">
+                      {item.subStats}
+                    </div>
+                  </td>
+
+                  {/* Tình trạng */}
+                  <td className="p-3.5">
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
+                        item.status === 'active'
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
+                          : item.status === 'draft'
+                          ? 'bg-white/[0.05] text-slate-400 border-white/[0.08]'
+                          : 'bg-amber-500/10 text-amber-300 border-amber-500/25'
+                      }`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          item.status === 'active'
+                            ? 'bg-emerald-400'
+                            : item.status === 'draft'
+                            ? 'bg-slate-400'
+                            : 'bg-amber-400'
+                        }`}
+                      />
+                      <span>{item.statusLabel}</span>
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -177,8 +191,8 @@ export const ProductTable: React.FC<Props> = ({ products }) => {
       {/* Pagination Footer */}
       <div className="p-3.5 bg-[#0a0f19] border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
         <div>
-          Hiển thị <span className="font-bold text-white">1 - 6</span> trên tổng số{' '}
-          <span className="font-bold text-white">48</span> sản phẩm
+          Hiển thị <span className="font-bold text-white">{products.length > 0 ? `1 - ${products.length}` : '0'}</span> trên tổng số{' '}
+          <span className="font-bold text-white">{products.length}</span> sản phẩm
         </div>
 
         <div className="flex items-center gap-1 font-mono text-xs">
@@ -198,27 +212,9 @@ export const ProductTable: React.FC<Props> = ({ products }) => {
           </button>
           <button
             type="button"
-            className="w-7 h-7 rounded-lg hover:bg-white/[0.08] text-slate-400 flex items-center justify-center cursor-pointer"
-          >
-            2
-          </button>
-          <button
-            type="button"
-            className="w-7 h-7 rounded-lg hover:bg-white/[0.08] text-slate-400 flex items-center justify-center cursor-pointer"
-          >
-            3
-          </button>
-          <span className="px-1 text-slate-400">...</span>
-          <button
-            type="button"
-            className="w-7 h-7 rounded-lg hover:bg-white/[0.08] text-slate-400 flex items-center justify-center cursor-pointer"
-          >
-            8
-          </button>
-          <button
-            type="button"
+            disabled={true}
             onClick={() => setCurrentPage((p) => p + 1)}
-            className="px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] text-slate-300 cursor-pointer"
+            className="px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.08] text-slate-400 opacity-50 cursor-not-allowed"
           >
             Sau ›
           </button>

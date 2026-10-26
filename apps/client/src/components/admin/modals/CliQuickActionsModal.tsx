@@ -28,11 +28,11 @@ export const CliQuickActionsModal: React.FC<CliQuickActionsModalProps> = ({
     let result = '';
 
     if (toRun.includes('export')) {
-      result = 'OK: Generated export payload for 1,842 users. File ready for download.';
+      result = 'OK: Generated export payload for active users. File ready for download.';
       onShowToast('CLI: Đã xuất dữ liệu người dùng thành công!');
     } else if (toRun.includes('ban') || toRun.includes('quarantine')) {
-      result = 'OK: Flagged 9 suspicious IP clusters and synchronized cloud firewall.';
-      onShowToast('CLI: Đã cách ly 9 cụm bot thành công!');
+      result = 'OK: Cloud firewall synchronized. Bot clusters quarantined.';
+      onShowToast('CLI: Đã cách ly cụm bot thành công!');
     } else if (toRun.includes('cache')) {
       result = 'OK: Cloudflare CDN edge cache purged (100% propagated across 12 datacenters).';
       onShowToast('CLI: Đã xóa cache CDN thành công!');

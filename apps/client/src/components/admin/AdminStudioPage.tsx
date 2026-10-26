@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users,
   Terminal,
@@ -12,6 +12,7 @@ import {
   PlusCircle,
   ChevronDown,
   FileCode2,
+  LogOut,
 } from 'lucide-react';
 import { AdminStudioPageProps } from './types';
 import { OverviewDashboardView } from './overview';
@@ -37,6 +38,67 @@ export const AdminStudioPage: React.FC<AdminStudioPageProps> = ({
   // Global modals and notifications
   const [isCliModalOpen, setIsCliModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // User Profile Dropdown & Logout
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+
+  // Dynamic products count
+  const [productsCount, setProductsCount] = useState<number>(() => {
+    try {
+      const raw = localStorage.getItem('devfolio_products');
+      if (raw) return JSON.parse(raw).length;
+    } catch {
+      // ignore
+    }
+    return 0;
+  });
+
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const raw = localStorage.getItem('devfolio_products');
+        setProductsCount(raw ? JSON.parse(raw).length : 0);
+      } catch {
+        // ignore
+      }
+    };
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('devfolio_products_updated', handleSync);
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('devfolio_products_updated', handleSync);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = () => setIsUserDropdownOpen(false);
+    if (isUserDropdownOpen) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [isUserDropdownOpen]);
+
+  const handleLogout = () => {
+    setIsUserDropdownOpen(false);
+    showToast('Đang đăng xuất khỏi hệ thống Studio Admin...');
+    try {
+      localStorage.removeItem('devfolio_auth');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    } catch {
+      // ignore
+    }
+    if (typeof window !== 'undefined' && window.history.pushState) {
+      window.history.pushState(null, '', '/');
+    }
+    setTimeout(() => {
+      if (onBackToHome) {
+        onBackToHome();
+      } else {
+        window.location.href = '/';
+      }
+    }, 400);
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -145,7 +207,7 @@ export const AdminStudioPage: React.FC<AdminStudioPageProps> = ({
                   >
                     <span>Tất cả sản phẩm</span>
                     <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-white/[0.05] text-slate-400">
-                      48
+                      {productsCount}
                     </span>
                   </button>
 
@@ -211,9 +273,6 @@ export const AdminStudioPage: React.FC<AdminStudioPageProps> = ({
                 <MessageSquare className={`w-4 h-4 ${activeSidebarItem === 'comments' ? 'text-emerald-400' : 'text-slate-400'}`} />
                 <span className={activeSidebarItem === 'comments' ? 'font-semibold text-white' : ''}>Kiểm duyệt bình luận</span>
               </div>
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-red-500/20 text-red-400 border border-red-500/30 font-bold">
-                4
-              </span>
             </button>
 
             {/* 5. Thống kê chi tiết */}
@@ -330,19 +389,88 @@ export const AdminStudioPage: React.FC<AdminStudioPageProps> = ({
               <span>CLI Quick Actions</span>
             </button>
 
-            {/* Profile Avatar */}
+            {/* Profile Avatar & Dropdown */}
             <div className="relative">
-              <div className="w-8 h-8 rounded-full overflow-hidden border border-emerald-500/40 bg-emerald-500/20">
-                <img
-                  src="/images/alex-avatar.jpg"
-                  alt="Alex Nguyen"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
-                  className="w-full h-full object-cover"
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsUserDropdownOpen(!isUserDropdownOpen);
+                }}
+                className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-white/[0.05] transition cursor-pointer group border border-transparent hover:border-white/[0.08]"
+              >
+                <div className="relative">
+                  <div className="w-8 h-8 rounded-full overflow-hidden border border-emerald-500/40 bg-emerald-500/20">
+                    <img
+                      src="/images/alex-avatar.jpg"
+                      alt="Alex Nguyen"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-[#070b12] rounded-full" />
+                </div>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-transform duration-200 ${
+                    isUserDropdownOpen ? 'rotate-180 text-emerald-400' : ''
+                  }`}
                 />
-              </div>
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-[#070b12] rounded-full" />
+              </button>
+
+              {/* Dropdown Menu */}
+              {isUserDropdownOpen && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute right-0 mt-2 w-60 rounded-2xl bg-[#0d131f] border border-white/[0.08] shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150 backdrop-blur-xl"
+                >
+                  <div className="px-3 py-2.5 border-b border-white/[0.05]">
+                    <div className="font-bold text-white text-xs">Alex Nguyen</div>
+                    <div className="text-[11px] text-slate-400 font-mono truncate">admin@devfolio.io</div>
+                    <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      Super Admin
+                    </span>
+                  </div>
+
+                  <div className="py-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsUserDropdownOpen(false);
+                        setActiveSidebarItem('settings');
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:text-white hover:bg-white/[0.04] transition cursor-pointer"
+                    >
+                      <Settings className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Cài đặt hệ thống</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsUserDropdownOpen(false);
+                        if (onBackToHome) onBackToHome();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:text-white hover:bg-white/[0.04] transition cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Về trang chủ</span>
+                    </button>
+                  </div>
+
+                  <div className="pt-1 border-t border-white/[0.05]">
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition cursor-pointer font-medium"
+                    >
+                      <LogOut className="w-3.5 h-3.5 text-rose-400" />
+                      <span>Đăng xuất</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>
@@ -369,7 +497,7 @@ export const AdminStudioPage: React.FC<AdminStudioPageProps> = ({
             <div className="space-y-6 max-w-6xl mx-auto w-full animate-in fade-in duration-200">
               <AdminNewProductPage
                 onBackToHome={onBackToHome}
-                onNavigateTab={(tab: 'overview' | 'users' | 'upload') => setActiveSidebarItem(tab)}
+                onNavigateTab={(tab: string) => setActiveSidebarItem(tab)}
               />
             </div>
           )}

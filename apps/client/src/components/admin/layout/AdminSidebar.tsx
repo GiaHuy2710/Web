@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Terminal,
   BarChart3,
@@ -21,6 +21,53 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   pendingModerationCount,
 }) => {
   const [isProductsDropdownOpen, setIsProductsDropdownOpen] = useState(true);
+
+  const [productsCount, setProductsCount] = useState<number>(() => {
+    try {
+      const raw = localStorage.getItem('devfolio_products');
+      if (raw) return JSON.parse(raw).length;
+    } catch {
+      // ignore
+    }
+    return 0;
+  });
+
+  const [usersCount, setUsersCount] = useState<number>(() => {
+    try {
+      const raw = localStorage.getItem('devfolio_users');
+      if (raw) return JSON.parse(raw).length;
+    } catch {
+      // ignore
+    }
+    return 0;
+  });
+
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const rawProducts = localStorage.getItem('devfolio_products');
+        setProductsCount(rawProducts ? JSON.parse(rawProducts).length : 0);
+      } catch {
+        // ignore
+      }
+
+      try {
+        const rawUsers = localStorage.getItem('devfolio_users');
+        setUsersCount(rawUsers ? JSON.parse(rawUsers).length : 0);
+      } catch {
+        // ignore
+      }
+    };
+
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('devfolio_products_updated', handleSync);
+    window.addEventListener('devfolio_users_updated', handleSync);
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('devfolio_products_updated', handleSync);
+      window.removeEventListener('devfolio_users_updated', handleSync);
+    };
+  }, []);
   return (
     <aside className="w-64 shrink-0 bg-[#0a0f19] border-r border-white/[0.06] flex flex-col justify-between hidden lg:flex">
       <div>
@@ -77,7 +124,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 <span>Quản lý Người dùng</span>
               </div>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-white/[0.06] text-slate-300 border border-white/[0.08]">
-                2,490
+                {usersCount}
               </span>
             </button>
 
@@ -98,7 +145,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-white/[0.06] text-slate-300 border border-white/[0.08]">
-                    48
+                    {productsCount}
                   </span>
                   <ChevronDown
                     className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
@@ -123,7 +170,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                   >
                     <span>Tất cả sản phẩm</span>
                     <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-white/[0.05] text-slate-400">
-                      48
+                      {productsCount}
                     </span>
                   </button>
 

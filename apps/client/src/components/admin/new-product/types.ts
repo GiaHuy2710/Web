@@ -20,6 +20,6 @@ export interface AdminNewProductPageProps {
         email?: string;
         avatarUrl?: string | null;
     } | null;
-    onNavigateTab?: (tab: 'overview' | 'users' | 'upload') => void;
+    onNavigateTab?: (tab: string) => void;
 }
 
