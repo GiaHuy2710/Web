@@ -1,7 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 export const ShaAuditWidget: React.FC = () => {
+  const [productsCount, setProductsCount] = useState<number>(() => {
+    try {
+      const raw = localStorage.getItem('devfolio_products');
+      if (raw) return JSON.parse(raw).length;
+    } catch {
+      // ignore
+    }
+    return 0;
+  });
+
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const raw = localStorage.getItem('devfolio_products');
+        setProductsCount(raw ? JSON.parse(raw).length : 0);
+      } catch {
+        // ignore
+      }
+    };
+
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('devfolio_products_updated', handleSync);
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('devfolio_products_updated', handleSync);
+    };
+  }, []);
+
   return (
     <div className="p-5 rounded-2xl bg-[#090e17] border border-white/[0.06] space-y-4">
       {/* Header */}
@@ -28,10 +56,14 @@ export const ShaAuditWidget: React.FC = () => {
         </div>
         <div>
           <div className="text-xs font-bold text-white">
-            Tất cả 48 file đạt chuẩn GPG Key
+            {productsCount > 0
+              ? `Tất cả ${productsCount} artifact đạt chuẩn GPG Key`
+              : 'Chưa có file artifact nào cần quét'}
           </div>
           <div className="text-[11px] text-slate-400">
-            Không phát hiện tệp hỏng hoặc lệch mã hash.
+            {productsCount > 0
+              ? 'Không phát hiện tệp hỏng hoặc lệch mã hash.'
+              : 'Kho lưu trữ hiện tại chưa có tệp tải lên.'}
           </div>
         </div>
       </div>

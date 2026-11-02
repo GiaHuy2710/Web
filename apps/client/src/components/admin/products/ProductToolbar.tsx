@@ -2,6 +2,20 @@ import React from 'react';
 import { Search, RotateCcw, ChevronDown, SlidersHorizontal } from 'lucide-react';
 import { ProductCategory } from './types';
 
+interface CategoryCounts {
+  all: number;
+  cli: number;
+  web: number;
+  game: number;
+}
+
+interface StatusCounts {
+  all: number;
+  active: number;
+  draft: number;
+  pending: number;
+}
+
 interface Props {
   searchQuery: string;
   setSearchQuery: (q: string) => void;
@@ -10,6 +24,8 @@ interface Props {
   statusFilter: string;
   setStatusFilter: (st: string) => void;
   onResetFilter: () => void;
+  categoryCounts?: CategoryCounts;
+  statusCounts?: StatusCounts;
 }
 
 export const ProductToolbar: React.FC<Props> = ({
@@ -20,6 +36,8 @@ export const ProductToolbar: React.FC<Props> = ({
   statusFilter,
   setStatusFilter,
   onResetFilter,
+  categoryCounts = { all: 0, cli: 0, web: 0, game: 0 },
+  statusCounts = { all: 0, active: 0, draft: 0, pending: 0 },
 }) => {
   return (
     <div className="space-y-3">
@@ -52,7 +70,9 @@ export const ProductToolbar: React.FC<Props> = ({
             }`}
           >
             <span>Tất cả</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/[0.08]">48</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/[0.08]">
+              {categoryCounts.all}
+            </span>
           </button>
 
           <button
@@ -65,7 +85,9 @@ export const ProductToolbar: React.FC<Props> = ({
             }`}
           >
             <span>Công cụ & CLI</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/[0.08]">18</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/[0.08]">
+              {categoryCounts.cli}
+            </span>
           </button>
 
           <button
@@ -78,7 +100,9 @@ export const ProductToolbar: React.FC<Props> = ({
             }`}
           >
             <span>Website & SaaS</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/[0.08]">21</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/[0.08]">
+              {categoryCounts.web}
+            </span>
           </button>
 
           <button
@@ -91,7 +115,9 @@ export const ProductToolbar: React.FC<Props> = ({
             }`}
           >
             <span>Game & WASM</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/[0.08]">9</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/[0.08]">
+              {categoryCounts.game}
+            </span>
           </button>
         </div>
       </div>
@@ -106,10 +132,10 @@ export const ProductToolbar: React.FC<Props> = ({
               onChange={(e) => setStatusFilter(e.target.value)}
               className="appearance-none bg-[#0b101b] border border-white/[0.08] rounded-xl px-3.5 py-1.5 pr-8 text-xs text-slate-300 focus:outline-none cursor-pointer"
             >
-              <option value="all">Tất cả trạng thái (48)</option>
-              <option value="active">Đang hoạt động (Live)</option>
-              <option value="draft">Bản nháp (Draft)</option>
-              <option value="pending">Chờ duyệt</option>
+              <option value="all">Tất cả trạng thái ({statusCounts.all})</option>
+              <option value="active">Đang hoạt động ({statusCounts.active})</option>
+              <option value="draft">Bản nháp ({statusCounts.draft})</option>
+              <option value="pending">Chờ duyệt ({statusCounts.pending})</option>
             </select>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
@@ -139,10 +165,10 @@ export const ProductToolbar: React.FC<Props> = ({
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-mono text-slate-400">SẮP XẾP:</span>
           <div className="relative">
-            <select className="appearance-none bg-[#0b101b] border border-white/[0.08] rounded-xl px-3 py-1.5 pr-7 text-xs text-slate-200 focus:outline-none cursor-pointer">
-              <option>Mới cập nhật nhất</option>
-              <option>Lượt tải nhiều nhất</option>
-              <option>Tên A - Z</option>
+            <select className="appearance-none bg-[#0b101b] border border-white/[0.08] rounded-xl px-3 py-1.5 pr-7 text-xs text-slate-300 focus:outline-none cursor-pointer">
+              <option value="newest">Mới cập nhật nhất</option>
+              <option value="downloads">Lượt tải nhiều nhất</option>
+              <option value="name">Tên A-Z</option>
             </select>
             <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>

@@ -11,6 +11,7 @@ import {
 } from '../widgets';
 import { AuditLogItem, ModerationItem } from '../types';
 import { getAuditLogs } from '../audit';
+import { authApi } from '../../../shared/api/auth.api';
 
 export interface OverviewDashboardViewProps {
   onShowToast: (msg: string) => void;
@@ -29,6 +30,9 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
 }) => {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | 'year'>('30d');
   const [isRefreshingAudit, setIsRefreshingAudit] = useState(false);
+
+  const currentUser = authApi.getCurrentUser();
+  const adminName = currentUser?.fullName || 'Admin';
 
   // Moderation items - Mặc định trống
   const [moderationItems, setModerationItems] = useState<ModerationItem[]>([]);
@@ -78,11 +82,11 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-white tracking-tight">
-              Xin chào, Alex
+              Xin chào, {adminName}
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              Super Admin
+              {currentUser?.role === 'admin' ? 'Super Admin' : 'Admin'}
             </span>
           </div>
 

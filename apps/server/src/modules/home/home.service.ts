@@ -125,28 +125,7 @@ export class HomeService {
   }
 
   /**
-   * 3. Thao tác Thả tim / Like dự án
-   */
-  async toggleLikeProject(id: string) {
-    const project = await db.project.findUnique({ where: { id } });
-    if (!project) {
-      throw new AppError("Không tìm thấy dự án để thích", 404, "NOT_FOUND");
-    }
-
-    const current = this.likedProjects.get(id) || { likes: 0, isLiked: false };
-    const nextLiked = !current.isLiked;
-    const nextLikes = Math.max(0, current.likes + (nextLiked ? 1 : -1));
-    this.likedProjects.set(id, { likes: nextLikes, isLiked: nextLiked });
-
-    return {
-      id,
-      likes: nextLikes,
-      isLiked: nextLiked,
-    };
-  }
-
-  /**
-   * 4. Lấy số liệu thống kê thật từ Database
+   * 3. Lấy số liệu thống kê thật từ Database
    */
   async getStats() {
     const [totalUsers, totalProjects] = await Promise.all([
@@ -163,16 +142,31 @@ export class HomeService {
   }
 
   /**
+   * 4. Thao tác Thả tim / Bỏ tim dự án
+   */
+  async toggleLikeProject(id: string) {
+    // Kiểm tra xem dự án có tồn tại không
+    const project = await db.project.findUnique({ where: { id } });
+    if (!project) {
+      throw new AppError("Không tìm thấy dự án", 404, "NOT_FOUND");
+    }
+    // Ở đây có thể lưu vào DB hoặc đếm like tạm thời
+    return {
+      projectId: id,
+      likes: 1,
+      isLiked: true,
+    };
+  }
+
+  /**
    * 5. Đăng ký nhận bản tin Newsletter
    */
   async subscribeNewsletter(input: NewsletterInput) {
     const email = input.email.toLowerCase().trim();
-    this.newsletterSubscribers.add(email);
-
+    console.log(`[Newsletter] Đăng ký mới email: ${email}`);
     return {
-      message: "Đăng ký nhận bản tin công nghệ thành công!",
       email,
-      totalSubscribers: this.newsletterSubscribers.size,
+      message: "Cảm ơn bạn đã đăng ký nhận bản tin công nghệ của DevFolio!",
     };
   }
 }

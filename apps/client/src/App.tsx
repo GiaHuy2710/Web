@@ -16,18 +16,88 @@ import {
   AdminPage,
 } from './pages';
 
-import { PROJECTS_DATA } from './data/projectsData';
-import { ProjectItem } from './types/project';
+import { ProjectItem, ProjectCategory } from './types/project';
+import { ProductRegistryItem } from './components/admin/products/types';
 import { AuthUser } from './types/auth';
 import { authApi } from './shared/api';
 
+// Chuyển đổi dữ liệu từ ProductRegistryItem sang ProjectItem để hiển thị trên Landing page
+const mapProductRegistryToProjectItem = (item: ProductRegistryItem): ProjectItem => {
+  let cat: ProjectCategory = 'Developer Tools';
+  if (item.category === 'web' || item.categoryLabel?.toLowerCase().includes('web')) {
+    cat = 'Web App';
+  } else if (item.category === 'game' || item.categoryLabel?.toLowerCase().includes('game')) {
+    cat = 'Games & Creative';
+  } else if (item.categoryLabel?.toLowerCase().includes('ai')) {
+    cat = 'AI Tools';
+  }
+
+  return {
+    id: item.slug || item.id,
+    title: item.name,
+    badge: item.indexTag || 'Active',
+    badgeType: 'breadcrumb',
+    likes: 0,
+    views: item.downloads || '0',
+    category: cat,
+    techStack: item.techStack || ['TypeScript'],
+    description: item.statusLabel ? `Phiên bản ${item.version} • ${item.categoryLabel}` : item.name,
+    image: '/images/synapse-ai.jpg',
+    demoUrl: `https://${item.slug || 'project'}.devfolio.io`,
+    githubUrl: `https://github.com/alexdev/${item.slug || 'project'}`,
+    details: {
+      longDescription: `Dự án ${item.name} (${item.version}). Phân loại: ${item.categoryLabel}. Mã gói: ${item.code}.`,
+      highlights: [
+        `Phát hành phiên bản ${item.version}`,
+        `Cấu hình môi trường Edge CDN`,
+        `Tương thích toàn hệ thống`,
+      ],
+      architecture: item.techStack?.join(', ') || 'TypeScript',
+      version: item.version,
+      stars: '0',
+    },
+  };
+};
+
+const getStoredProjects = (): ProjectItem[] => {
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('devfolio_products');
+      if (raw) {
+        const items: ProductRegistryItem[] = JSON.parse(raw);
+        if (Array.isArray(items) && items.length > 0) {
+          const active = items.filter((i) => i.status === 'active');
+          const toShow = active.length > 0 ? active : items;
+          return toShow.map(mapProductRegistryToProjectItem);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return [];
+};
+
 export const App: React.FC = () => {
-  const [projects, setProjects] = useState<ProjectItem[]>(PROJECTS_DATA);
-  const [savedCount, setSavedCount] = useState<number>(5);
+  const [projects, setProjects] = useState<ProjectItem[]>(getStoredProjects);
+  const [savedCount, setSavedCount] = useState<number>(0);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [selectedTech, setSelectedTech] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<string>('newest');
   const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // Đồng bộ danh sách dự án khi có thay đổi từ Admin Studio hoặc tab khác
+  useEffect(() => {
+    const handleSync = () => {
+      setProjects(getStoredProjects());
+    };
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('devfolio_products_updated', handleSync);
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('devfolio_products_updated', handleSync);
+    };
+  }, []);
 
   // Xác định view ban đầu: Mặc định luôn là 'projects' (Landing page)
   // Chỉ mở admin khi truy cập trực tiếp hash #admin hoặc query param ?view=admin

@@ -25,6 +25,7 @@ import {
   GitBranch
 } from 'lucide-react';
 import { ProjectItem } from '../../types/project';
+import { authApi } from '../../shared/api/auth.api';
 
 interface ProjectDetailPageProps {
   project: ProjectItem;
@@ -44,44 +45,39 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   // State quản lý tab media thumbnail
   const [activeMediaTab, setActiveMediaTab] = useState<number>(0);
   // State quản lý yêu thích
-  const [isSaved, setIsSaved] = useState<boolean>(true);
-  const [savedCount, setSavedCount] = useState<number>(544);
+  const [isSaved, setIsSaved] = useState<boolean>(false);
+  const [savedCount, setSavedCount] = useState<number>(() => project.likes || 0);
   // State sao chép link
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [copiedDocker, setCopiedDocker] = useState<boolean>(false);
   // State bình luận
   const [commentText, setCommentText] = useState<string>('');
-  const [commentsList, setCommentsList] = useState([
-    {
-      id: '1',
-      author: 'Tran Hoang',
-      handle: '@hoang_dev',
-      role: 'CONTRIBUTOR',
-      time: '2 giờ trước',
-      content: 'Cho mình hỏi về phần chunking logic của Tree-sitter! Khi gặp các class lớn lồng nhiều method closure trong TypeScript thì bộ parser này tách theo AST node nào? Bởi vì nếu chia nông quá thì mất ngữ cảnh còn sâu quá thì sợ vượt context window token limit của LLM local. Kết quả benchmark latency 380ms là trên máy local GPU hay chạy cloud dGPU?',
-      likes: 8,
-      isLiked: false,
-      reply: {
-        author: 'Alex Nguyen',
-        role: 'Tác giả',
-        time: '1 giờ trước',
-        content: 'Cảm ơn @hoang_dev! Parser cắt đa cấp theo khối logic AST (Function Declaration / Method Definition), giữ nguyên ngữ cảnh cha (Parent Scope Header). Nếu method quá 1,200 tokens, mở sliding overlapping window 200 tokens. Latency 380ms đo thực tế trên RTX 4090 chạy Qdrant standalone + Ollama v0.3 nhé!',
-        likes: 3,
-        isLiked: false
-      }
-    },
-    {
-      id: '2',
-      author: 'Daniel Ngo',
-      handle: '@dango_ai',
-      role: '',
-      time: '1 ngày trước',
-      content: 'Giao diện dashboard bundle check mượt đỉnh thật sự, đặc biệt là cách render cây AST đồ họa svg! Đã deploy thử trên Kubernetes cluster nội bộ công ty qua Helm Chart của repo, mượt mà ngoài mong đợi.',
-      likes: 5,
-      isLiked: false,
-      reply: null
+  const [commentsList, setCommentsList] = useState<{
+    id: string;
+    author: string;
+    handle: string;
+    role?: string;
+    time: string;
+    content: string;
+    likes: number;
+    isLiked: boolean;
+    reply?: {
+      author: string;
+      role: string;
+      time: string;
+      content: string;
+      likes: number;
+      isLiked: boolean;
+    } | null;
+  }[]>(() => {
+    try {
+      const raw = localStorage.getItem(`devfolio_comments_${project.id}`);
+      if (raw) return JSON.parse(raw);
+    } catch {
+      // ignore
     }
-  ]);
+    return [];
+  });
 
   const handleToggleSave = () => {
     setIsSaved(prev => !prev);
@@ -89,13 +85,13 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText('https://devfolio.co/p/synapse-ai-rag');
+    navigator.clipboard.writeText(window.location.href);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
   const handleCopyDocker = () => {
-    navigator.clipboard.writeText('ghcr.io/devfolio/synapse:latest');
+    navigator.clipboard.writeText(project.dockerPull || `ghcr.io/devfolio/${project.id}:latest`);
     setCopiedDocker(true);
     setTimeout(() => setCopiedDocker(false), 2000);
   };
@@ -104,11 +100,12 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
     e.preventDefault();
     if (!commentText.trim()) return;
 
+    const user = authApi.getCurrentUser();
     const newComment = {
       id: Date.now().toString(),
-      author: 'Alex Nguyen',
-      handle: '@alexdev',
-      role: 'Tác giả',
+      author: user?.fullName || 'Khách',
+      handle: user?.email ? `@${user.email.split('@')[0]}` : '@guest',
+      role: user?.role === 'admin' ? 'Tác giả' : 'Thành viên',
       time: 'Vừa xong',
       content: commentText.trim(),
       likes: 0,
@@ -116,8 +113,14 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
       reply: null
     };
 
-    setCommentsList([newComment, ...commentsList]);
+    const next = [newComment, ...commentsList];
+    setCommentsList(next);
     setCommentText('');
+    try {
+      localStorage.setItem(`devfolio_comments_${project.id}`, JSON.stringify(next));
+    } catch {
+      // ignore
+    }
   };
 
   const handleLikeComment = (commentId: string) => {
@@ -474,7 +477,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                     <MessageSquare className="w-4 h-4 text-emerald-400" />
                     Bình luận & Thảo luận
                   </h3>
-                  <span className="text-xs font-mono text-slate-400">14 đóng góp</span>
+                  <span className="text-xs font-mono text-slate-400">{commentsList.length} đóng góp</span>
                 </div>
 
                 <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
@@ -487,9 +490,9 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               {/* Form gửi bình luận mới */}
               <form onSubmit={handleAddComment} className="p-4 rounded-2xl bg-[#0c121b] border border-[#1d2938] space-y-3">
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="font-semibold text-white">Alex Nguyen</span>
+                  <span className="font-semibold text-white">{authApi.getCurrentUser()?.fullName || 'Khách'}</span>
                   <span className="px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-mono">
-                    Tác giả dự án
+                    {authApi.getCurrentUser()?.role === 'admin' ? 'Tác giả dự án' : 'Thành viên'}
                   </span>
                 </div>
 
@@ -515,7 +518,12 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
 
               {/* Danh sách bình luận */}
               <div className="space-y-3 pt-2">
-                {commentsList.map(c => (
+                {commentsList.length === 0 ? (
+                  <div className="py-8 px-4 rounded-2xl bg-[#090e15] border border-dashed border-[#16212e] text-center text-xs text-slate-400">
+                    Chưa có bình luận nào cho dự án này. Hãy là người đầu tiên chia sẻ nhận xét hoặc đặt câu hỏi kỹ thuật!
+                  </div>
+                ) : (
+                  commentsList.map(c => (
                   <div key={c.id} className="p-4 rounded-2xl bg-[#090e15] border border-[#16212e] space-y-3">
                     {/* Header bình luận */}
                     <div className="flex items-center justify-between text-xs">
@@ -576,7 +584,8 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                       </div>
                     )}
                   </div>
-                ))}
+                ))
+                )}
               </div>
             </div>
 
@@ -695,7 +704,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                     </button>
                   </div>
                   <div className="p-2 rounded-lg bg-[#070b10] border border-[#16212e] text-[11px] text-cyan-300 truncate">
-                    ghcr.io/devfolio/synapse:latest
+                    {project.dockerPull || `ghcr.io/devfolio/${project.id}:latest`}
                   </div>
                 </div>
                 <div className="flex items-center justify-between pt-1 text-slate-300">

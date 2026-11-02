@@ -26,6 +26,7 @@ export interface ProjectItem {
   image: string;
   demoUrl: string;
   githubUrl: string;
+  dockerPull?: string;
   details: ProjectDetails;
 }
 

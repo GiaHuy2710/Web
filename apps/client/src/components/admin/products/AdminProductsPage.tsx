@@ -43,6 +43,26 @@ export const AdminProductsPage: React.FC<AdminProductsPageProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory>('all');
   const [statusFilter, setStatusFilter] = useState('all');
 
+  const categoryCounts = useMemo(() => ({
+    all: products.length,
+    cli: products.filter(
+      (p) => p.category === 'cli' || p.categoryLabel?.toLowerCase().includes('cli') || p.categoryLabel?.toLowerCase().includes('tool')
+    ).length,
+    web: products.filter(
+      (p) => p.category === 'web' || p.categoryLabel?.toLowerCase().includes('web')
+    ).length,
+    game: products.filter(
+      (p) => p.category === 'game' || p.categoryLabel?.toLowerCase().includes('game')
+    ).length,
+  }), [products]);
+
+  const statusCounts = useMemo(() => ({
+    all: products.length,
+    active: products.filter((p) => p.status === 'active').length,
+    draft: products.filter((p) => p.status === 'draft').length,
+    pending: products.filter((p) => p.status === 'pending').length,
+  }), [products]);
+
   // Lọc sản phẩm
   const filteredProducts = useMemo(() => {
     return products.filter((item) => {
@@ -148,6 +168,8 @@ export const AdminProductsPage: React.FC<AdminProductsPageProps> = ({
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
         onResetFilter={handleResetFilter}
+        categoryCounts={categoryCounts}
+        statusCounts={statusCounts}
       />
 
       {/* Bảng dữ liệu sản phẩm */}

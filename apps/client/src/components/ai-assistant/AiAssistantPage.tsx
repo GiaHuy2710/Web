@@ -4,9 +4,6 @@ import {
   Send, 
   RotateCcw, 
   ArrowRight, 
-  ExternalLink, 
-  Mic, 
-  Wand2, 
   Baby, 
   Utensils, 
   BookOpen, 
@@ -16,24 +13,36 @@ import {
   Heart
 } from 'lucide-react';
 
+interface MetaphorData {
+  title: string;
+  subtitle: string;
+  boxes: {
+    role: string;
+    desc: string;
+    avatar: string;
+    highlight?: boolean;
+  }[];
+  explanation: string;
+  takeaway: string;
+}
+
 interface Message {
   id: string;
   sender: 'user' | 'ai';
   time: string;
   text?: string;
   isMetaphor?: boolean;
-  metaphorData?: {
-    title: string;
-    subtitle: string;
-    boxes: {
-      role: string;
-      desc: string;
-      avatar: string;
-      highlight?: boolean;
-    }[];
-    explanation: string;
-    takeaway: string;
-  };
+  metaphorData?: MetaphorData;
+}
+
+interface QuickQuestionItem {
+  id: string;
+  icon: React.ReactNode;
+  tag: string;
+  tagColor: string;
+  title: string;
+  desc: string;
+  userText: string;
 }
 
 export const AiAssistantPage: React.FC = () => {
@@ -43,43 +52,13 @@ export const AiAssistantPage: React.FC = () => {
   const [isTyping, setIsTyping] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Danh sách hội thoại mẫu
+  // Cuộc trò chuyện ban đầu sạch
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: '1',
-      sender: 'user',
-      time: '18:24',
-      text: 'API là cái gì vậy bạn? Nghe lập trình viên với mấy bạn IT nói suốt ngày mà mình không hiểu gì cả. Có thể giải thích như đang nói chuyện với người 5 tuổi được không?'
-    },
-    {
-      id: '2',
+      id: 'welcome',
       sender: 'ai',
-      time: '18:24',
-      isMetaphor: true,
-      metaphorData: {
-        title: 'Hãy tưởng tượng bạn đang đi ăn ở một quán phở! 🍜',
-        subtitle: 'Rất vui vì bạn đã hỏi câu này! Đừng cảm thấy ngại, thực ra API không hề huyền bí hay phức tạp như mọi người hay dọa đâu. Nó đơn giản như sau:',
-        boxes: [
-          {
-            role: 'BẠN LÀ KHÁCH HÀNG',
-            desc: 'Là màn hình app trên điện thoại của bạn đang mở.',
-            avatar: '📱'
-          },
-          {
-            role: 'NGƯỜI BỒI BÀN LÀ API',
-            desc: 'Mang tờ gọi món vào bếp, rồi bưng tô phở nóng quay lại bàn.',
-            avatar: '🧑‍💼',
-            highlight: true
-          },
-          {
-            role: 'NHÀ BẾP LÀ HỆ THỐNG (SERVER)',
-            desc: 'Nơi cất giữ thịt bánh, kho dữ liệu và thực hiện nấu nướng.',
-            avatar: '👨‍🍳'
-          }
-        ],
-        explanation: 'Bạn không cần phải tự mình chạy bổ vào bếp lục tủ lạnh xem còn thịt bò không (vừa nguy hiểm, vừa rối loạn). Bạn chỉ cần bảo với người phục vụ: “Cho một tô tái nạm”. Người phục vụ (API) sẽ làm việc với nhà bếp và mang kết quả ra cho bạn!',
-        takeaway: 'API là người đưa thư / bồi bàn trung gian giúp các ứng dụng nói chuyện và xin dữ liệu của nhau một cách trật tự, an toàn.'
-      }
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      text: 'Xin chào! Mình là trợ lý DevFolio Companion kết nối trực tiếp với AI Backend. Bạn có thể chọn câu hỏi gợi ý bên trên hoặc nhập bất kỳ thắc mắc công nghệ nào để mình giải đáp mộc mạc và trực quan nhé!'
     }
   ]);
 
@@ -91,73 +70,25 @@ export const AiAssistantPage: React.FC = () => {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  // Bộ câu hỏi nhanh thực tế
-  const quickQuestions = [
+  // Bộ câu hỏi nhanh
+  const quickQuestions: QuickQuestionItem[] = [
     {
       id: 'q1',
       icon: <Utensils className="w-4 h-4 text-cyan-400" />,
       tag: 'Cơ bản về Web',
       tagColor: 'text-cyan-400',
-      title: 'Backend và Frontend là gì? Ví von như nhà hàng?',
-      desc: 'Bồi bàn bưng bê hay đầu bếp trong bếp đóng vai trò gì?',
-      userText: 'Backend và Frontend khác nhau như thế nào? Ví von như nhà hàng giúp mình với!',
-      aiReply: {
-        title: 'Nhà hàng công nghệ: Bàn ăn (Frontend) & Gian bếp (Backend) 🍽️',
-        subtitle: 'Một trang web hay ứng dụng điện thoại thực chất giống như một quán ăn cao cấp:',
-        boxes: [
-          {
-            role: 'FRONTEND (BÀN ĂN & KHÔNG GIAN)',
-            desc: 'Tất cả những gì mắt bạn nhìn thấy: bàn ghế đẹp, menu lung linh, đèn sáng, nhạc êm dịu.',
-            avatar: '🎨',
-            highlight: true
-          },
-          {
-            role: 'BACKEND (GIAN BẾP BÊN TRONG)',
-            desc: 'Bếp ga, kho trữ thực phẩm đông lạnh, công thức nấu bí truyền và thớt dao cắt gọt.',
-            avatar: '🍳'
-          },
-          {
-            role: 'KẾT NỐI (ĐƯỜNG TRUYỀN DỮ LIỆU)',
-            desc: 'Khách chỉ việc bấm nút trên bàn, thức ăn được bếp nấu xong chuyển thẳng ra đĩa.',
-            avatar: '⚡'
-          }
-        ],
-        explanation: 'Lập trình viên Frontend chăm chút giao diện cho bạn bấm sướng tay, còn lập trình viên Backend lo tính tiền đúng, lưu tài khoản không bị hacker trộm mất.',
-        takeaway: 'Frontend là bộ mặt giao diện bên ngoài, Backend là bộ não lưu trữ logic và dữ liệu bên trong.'
-      }
+      title: 'API là cái gì, giải thích cho người 5 tuổi hiểu?',
+      desc: 'Ví dụ quán ăn: Khách gọi món, người bồi bàn và đầu bếp.',
+      userText: 'API là cái gì vậy bạn? Có thể giải thích như đang nói chuyện với người 5 tuổi được không?'
     },
     {
       id: 'q2',
       icon: <BookOpen className="w-4 h-4 text-emerald-400" />,
-      tag: 'Tính năng DevFolio',
+      tag: 'Dự án trong kho',
       tagColor: 'text-emerald-400',
-      title: 'Synapse AI hoạt động thế nào nếu ví như trợ lý thư viện?',
-      desc: 'Tìm kiếm sách siêu tốc mà không cần đọc hết từ 1 đến vạn.',
-      userText: 'Synapse AI hoạt động thế nào? Hãy ví von nó như một người thủ thư siêu năng lực.',
-      aiReply: {
-        title: 'Thủ thư thần kỳ trong kho tàng 500,000 cuốn sách 📚',
-        subtitle: 'Khi bạn lạc vào một thư viện quốc gia rộng bạt ngàn chứa hàng trăm ngàn đầu sách lập trình:',
-        boxes: [
-          {
-            role: 'CÁCH TRUYỀN THỐNG (TỰ ĐỌC)',
-            desc: 'Bạn phải lật từng trang của 500 cuốn sách chỉ để tìm 1 câu định nghĩa (mất cả tuần).',
-            avatar: '😫'
-          },
-          {
-            role: 'SYNAPSE AI (THỦ THƯ TRÍ TUỆ NHÂN TẠO)',
-            desc: 'Đã thuộc lòng bản đồ mọi giá sách, phân loại theo ý nghĩa ngữ nghĩa (Vector).',
-            avatar: '🤖',
-            highlight: true
-          },
-          {
-            role: 'KẾT QUẢ TỨC THÌ (DƯỚI 400MS)',
-            desc: 'Bạn vừa hỏi câu đầu tiên, thủ thư đã bay tới rút đúng cuốn sách, mở sẵn trang cần đọc.',
-            avatar: '✨'
-          }
-        ],
-        explanation: 'Synapse AI không đọc code như con người từng dòng, mà dịch toàn bộ code thành các toạ độ ý nghĩa. Do đó nó tìm câu trả lời chính xác từng dòng chỉ trong 380 miligiây.',
-        takeaway: 'Synapse AI là công cụ chỉ mục thông minh giúp kỹ sư tra cứu vị trí code và hiểu logic dự án ngay tức khắc.'
-      }
+      title: 'Dự án Synapse AI RAG giải quyết việc gì?',
+      desc: 'Tìm kiếm chính xác như thủ thư thông minh tra cứu 1 dòng trong 500 cuốn sách.',
+      userText: 'Dự án Synapse AI RAG trong kho của bạn làm được việc gì thực tế?'
     },
     {
       id: 'q3',
@@ -166,68 +97,82 @@ export const AiAssistantPage: React.FC = () => {
       tagColor: 'text-pink-400',
       title: 'Muốn tự làm web bán hàng thì bắt đầu từng bước từ đâu?',
       desc: 'Hướng dẫn từng chặng không cần học viết code từ số 0.',
-      userText: 'Mình muốn tự làm một website bán hàng nhỏ thì bắt đầu từ những bước nào?',
-      aiReply: {
-        title: '3 Bước mở cửa hàng trực tuyến không cần biết viết code 🛍️',
-        subtitle: 'Đừng vội mua sách học lập trình C++ hay Java! Hãy nghĩ như bạn mở quầy bán nước:',
-        boxes: [
-          {
-            role: 'BƯỚC 1: BIỂN HIỆU (TÊN MIỀN)',
-            desc: 'Mua một tên miền dễ nhớ (VD: giaydep.vn) như cắm biển hiệu cửa hàng.',
-            avatar: '🏷️'
-          },
-          {
-            role: 'BƯỚC 2: MẶT BẰNG (NỀN TẢNG CÓ SẴN)',
-            desc: 'Dùng các nền tảng kéo thả (Shopify, WordPress, Webflow) dựng kệ hàng trong 1 ngày.',
-            avatar: '🏪',
-            highlight: true
-          },
-          {
-            role: 'BƯỚC 3: MÁY QUẸT THẺ (CỔNG THANH TOÁN)',
-            desc: 'Kết nối mã QR VietQR / MoMo để khách chuyển khoản là ting ting có tiền ngay.',
-            avatar: '💳'
-          }
-        ],
-        explanation: 'Thời nay bạn không cần tự may từng sợi chỉ để mở tiệm quần áo. Sử dụng các công cụ kéo thả hiện đại là cách các startup triệu đô khởi đầu.',
-        takeaway: 'Bắt đầu từ nền tảng dựng sẵn (No-code/Low-code) để bán được đơn hàng đầu tiên trước khi nghĩ tới việc thuê lập trình viên đắt đỏ.'
-      }
+      userText: 'Mình muốn tự làm một website bán hàng nhỏ thì bắt đầu từ những bước nào?'
     },
     {
       id: 'q4',
       icon: <ShieldAlert className="w-4 h-4 text-amber-400" />,
-      tag: 'Bảo vệ tài khoản',
+      tag: 'An toàn thông tin',
       tagColor: 'text-amber-400',
       title: 'Bảo mật 2FA là gì, sao ngân hàng cứ nhắc tôi bật?',
       desc: 'Như chìa khóa nhà kết hợp mã gửi vào chuông cửa riêng.',
-      userText: 'Bảo mật 2FA là gì vậy? Sao app ngân hàng và Facebook cứ bắt tôi bật mã xác nhận?',
-      aiReply: {
-        title: 'Ổ khóa cửa 2 lớp bí mật của ngôi nhà tài sản 🔐',
-        subtitle: '2FA viết tắt của Two-Factor Authentication (Xác thực hai yếu tố):',
-        boxes: [
-          {
-            role: 'LỚP 1: MẬT KHẨU (CHÌA KHÓA CỬA)',
-            desc: 'Là chìa khóa cơ bạn cầm. Lỡ làm rơi ngoài đường thì kẻ trộm nhặt được mở vào nhà.',
-            avatar: '🔑'
-          },
-          {
-            role: 'LỚP 2: MÃ 2FA (CHUÔNG CỬA GỬI VỀ ĐIỆN THOẠI)',
-            desc: 'Dù trộm có chìa khóa, chuông cửa vẫn réo mã OTP bí mật vào túi áo của riêng bạn.',
-            avatar: '📲',
-            highlight: true
-          },
-          {
-            role: 'KẾT QUẢ (AN TOÀN TUYỆT ĐỐI)',
-            desc: 'Kẻ xấu không có điện thoại trong tay của bạn thì đành đứng nhìn cửa khóa chặt.',
-            avatar: '🛡️'
-          }
-        ],
-        explanation: 'Mật khẩu ngày nay rất dễ bị rò rỉ nếu bạn lỡ bấm vào link lạ. Nhưng mã 2FA thay đổi liên tục 30 giây một lần trên điện thoại giúp tiền trong tài khoản của bạn được bảo vệ 99.9%.',
-        takeaway: '2FA là lớp khiên thứ 2 bắt buộc phải có để kẻ trộm dù biết mật khẩu vẫn không thể đăng nhập được.'
-      }
+      userText: 'Bảo mật 2FA là gì vậy? Sao app ngân hàng và Facebook cứ bắt tôi bật mã xác nhận?'
     }
   ];
 
-  const handleSelectQuickQuestion = (item: typeof quickQuestions[0]) => {
+  const askAiApi = async (questionText: string) => {
+    try {
+      const response = await fetch('/api/ai/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: questionText,
+          mode: audienceMode,
+        }),
+      });
+
+      if (response.ok) {
+        const resData = await response.json();
+        const aiData = resData?.data;
+        if (aiData) {
+          return {
+            id: aiData.id || Date.now().toString(),
+            sender: 'ai' as const,
+            time: aiData.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            text: aiData.text,
+            isMetaphor: aiData.isMetaphor,
+            metaphorData: aiData.metaphorData,
+          };
+        }
+      }
+    } catch {
+      // offline fallback below
+    }
+
+    // Fallback nếu API server chưa bật
+    return {
+      id: (Date.now() + 1).toString(),
+      sender: 'ai' as const,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isMetaphor: true,
+      metaphorData: {
+        title: `Giải đáp câu hỏi: "${questionText}" 💡`,
+        subtitle: 'Dưới góc nhìn đời thường dễ hiểu nhất:',
+        boxes: [
+          {
+            role: 'VAI TRÒ TRONG ĐỜI SỐNG',
+            desc: 'Tương tự như việc bạn gửi yêu cầu hoặc gọi điện thoại cho một đơn vị dịch vụ.',
+            avatar: '📬',
+            highlight: true
+          },
+          {
+            role: 'CÁCH HỆ THỐNG XỬ LÝ',
+            desc: 'Hệ thống tiếp nhận, truy xuất kho lưu trữ và đóng gói kết quả trả lại màn hình.',
+            avatar: '⚙️'
+          },
+          {
+            role: 'KẾT QUẢ ĐẾN TAY BẠN',
+            desc: 'Thông tin hiển thị mượt mà tức thì mà bạn không cần phải bận tâm cơ chế phức tạp bên dưới.',
+            avatar: '🎉'
+          }
+        ],
+        explanation: 'Mọi công nghệ hiện đại dù đồ sộ đến đâu cũng sinh ra để phục vụ những nhu cầu bình dị: giao tiếp nhanh hơn, ghi nhớ chính xác hơn và xử lý công việc nhàn hơn.',
+        takeaway: 'Bạn có thể hỏi thêm bất cứ khái niệm nào, mình luôn sẵn sàng đồng hành cùng bạn!'
+      }
+    };
+  };
+
+  const handleSelectQuickQuestion = async (item: QuickQuestionItem) => {
     const userMsg: Message = {
       id: Date.now().toString(),
       sender: 'user',
@@ -238,69 +183,31 @@ export const AiAssistantPage: React.FC = () => {
     setIsTyping(true);
     setMessages(prev => [...prev, userMsg]);
 
-    setTimeout(() => {
-      const aiMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        sender: 'ai',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isMetaphor: true,
-        metaphorData: item.aiReply
-      };
-      setMessages(prev => [...prev, aiMsg]);
-      setIsTyping(false);
-    }, 600);
+    const aiMsg = await askAiApi(item.userText);
+    setMessages(prev => [...prev, aiMsg]);
+    setIsTyping(false);
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputQuestion.trim()) return;
+    if (!inputQuestion.trim() || isTyping) return;
+
+    const questionVal = inputQuestion.trim();
+    setInputQuestion('');
 
     const userMsg: Message = {
       id: Date.now().toString(),
       sender: 'user',
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      text: inputQuestion.trim()
+      text: questionVal
     };
 
-    const questionVal = inputQuestion.trim();
-    setInputQuestion('');
     setMessages(prev => [...prev, userMsg]);
     setIsTyping(true);
 
-    setTimeout(() => {
-      const aiMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        sender: 'ai',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isMetaphor: true,
-        metaphorData: {
-          title: `Giải đáp câu hỏi: "${questionVal}" 💡`,
-          subtitle: 'Tuyệt vời! Dưới góc nhìn dễ hiểu nhất không dùng thuật ngữ rối não:',
-          boxes: [
-            {
-              role: 'VAI TRÒ TRONG ĐỜI SỐNG',
-              desc: 'Tương tự như việc bạn gửi thư hoặc gọi điện thoại cho một người bạn thân.',
-              avatar: '📬',
-              highlight: true
-            },
-            {
-              role: 'CÁCH HỆ THỐNG XỬ LÝ',
-              desc: 'Máy tính nhận yêu cầu, kiểm tra kho dữ liệu và đóng gói kết quả sạch đẹp.',
-              avatar: '⚙️'
-            },
-            {
-              role: 'KẾT QUẢ ĐẾN TAY BẠN',
-              desc: 'Mọi thông tin hiện lên màn hình mượt mà không cần bạn phải hiểu cơ chế điện toán bên dưới.',
-              avatar: '🎉'
-            }
-          ],
-          explanation: 'Mọi công nghệ hiện đại dù phức tạp đến đâu cũng sinh ra để phục vụ những nhu cầu rất bình dị của con người: giao tiếp nhanh hơn, ghi nhớ nhiều hơn và giải trí vui hơn.',
-          takeaway: 'Cứ tự nhiên hỏi tiếp nhé! Đội ngũ DevFolio luôn sẵn sàng giải thích bất cứ khái niệm nào bạn thắc mắc.'
-        }
-      };
-      setMessages(prev => [...prev, aiMsg]);
-      setIsTyping(false);
-    }, 800);
+    const aiMsg = await askAiApi(questionVal);
+    setMessages(prev => [...prev, aiMsg]);
+    setIsTyping(false);
   };
 
   const handleResetChat = () => {
@@ -309,7 +216,7 @@ export const AiAssistantPage: React.FC = () => {
         id: Date.now().toString(),
         sender: 'ai',
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        text: 'Xin chào! Mình là trợ lý DevFolio Companion. Hãy hỏi mình bất kỳ điều gì bạn chưa rõ về công nghệ, mình sẽ giải thích thật mộc mạc và dễ hiểu!'
+        text: 'Xin chào! Mình là trợ lý DevFolio Companion. Hãy hỏi mình bất kỳ điều gì bạn muốn tìm hiểu về công nghệ nhé!'
       }
     ]);
   };
@@ -457,7 +364,7 @@ export const AiAssistantPage: React.FC = () => {
 
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#121c27] border border-emerald-500/20 text-xs font-mono text-emerald-400">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>Đang kết nối</span>
+                    <span>Đang kết nối API</span>
                   </div>
                 </div>
               </div>
@@ -467,10 +374,10 @@ export const AiAssistantPage: React.FC = () => {
                 {messages.map((msg) => (
                   <div key={msg.id}>
                     {msg.sender === 'user' ? (
-                      /* Tin nhắn người dùng (Căn phải) */
+                      /* Tin nhắn người dùng */
                       <div className="flex flex-col items-end space-y-1.5 ml-auto max-w-xl">
                         <div className="text-[11px] font-mono text-slate-400">
-                          Bạn (Người mới) • {msg.time}
+                          Bạn • {msg.time}
                         </div>
                         <div className="flex items-start gap-2.5">
                           <div className="p-4 rounded-2xl bg-[#141e2b] border border-[#213145] text-xs sm:text-sm text-slate-200 leading-relaxed shadow-sm">
@@ -482,94 +389,86 @@ export const AiAssistantPage: React.FC = () => {
                         </div>
                       </div>
                     ) : (
-                      /* Tin nhắn AI Companion (Căn trái) */
+                      /* Tin nhắn AI */
                       <div className="flex items-start gap-3 max-w-2xl">
                         <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0 mt-1">
                           <Sparkles className="w-4 h-4" />
                         </div>
 
-                        <div className="flex-1 space-y-3">
-                          {/* Trường hợp phản hồi bình thường */}
+                        <div className="space-y-3 flex-1">
+                          <div className="text-[11px] font-mono text-slate-400 flex items-center gap-2">
+                            <span className="text-emerald-400 font-bold">DevFolio Companion</span>
+                            <span>• {msg.time}</span>
+                          </div>
+
                           {msg.text && (
-                            <div className="p-4 rounded-2xl bg-[#0e1622] border border-[#1c293a] text-xs sm:text-sm text-slate-200 leading-relaxed">
+                            <div className="p-4 rounded-2xl bg-[#0f1724] border border-[#1d2b3c] text-xs sm:text-sm text-slate-200 leading-relaxed shadow-sm">
                               {msg.text}
                             </div>
                           )}
 
-                          {/* Trường hợp phản hồi trực quan theo dạng ẩn dụ (Metaphor Box) */}
                           {msg.isMetaphor && msg.metaphorData && (
-                            <div className="p-5 rounded-2xl bg-[#0c141f] border border-[#1d2d3e] space-y-4 shadow-xl">
-                              
-                              {/* Header ẩn dụ */}
-                              <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
-                                <h4 className="font-bold text-sm sm:text-base text-white">
+                            <div className="p-5 rounded-2xl bg-[#0a121c] border border-emerald-500/30 shadow-lg space-y-4">
+                              <div>
+                                <h4 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
                                   {msg.metaphorData.title}
                                 </h4>
-                                <span className="text-[11px] font-mono font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
-                                  Giải thích ẩn dụ
-                                </span>
+                                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                                  {msg.metaphorData.subtitle}
+                                </p>
                               </div>
 
-                              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                                {msg.metaphorData.subtitle}
-                              </p>
-
-                              {/* 3 Cột so sánh trực quan */}
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 my-3">
-                                {msg.metaphorData.boxes.map((b, i) => (
-                                  <div 
-                                    key={i} 
-                                    className={`p-3.5 rounded-xl border text-center space-y-2 ${
-                                      b.highlight 
-                                        ? 'bg-[#112324] border-emerald-500/50 shadow-md' 
-                                        : 'bg-[#090f17] border-[#182637]'
+                              {/* 3 Khối so sánh */}
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                {msg.metaphorData.boxes.map((b, idx) => (
+                                  <div
+                                    key={idx}
+                                    className={`p-3.5 rounded-xl border text-xs space-y-1.5 transition ${
+                                      b.highlight
+                                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-200 shadow-sm'
+                                        : 'bg-[#060a10] border-white/5 text-slate-300'
                                     }`}
                                   >
-                                    <div className="text-2xl">{b.avatar}</div>
-                                    <div className="font-bold font-mono text-[11px] text-emerald-300 tracking-tight">
+                                    <div className="text-lg">{b.avatar}</div>
+                                    <div className="font-bold text-[11px] font-mono tracking-wider">
                                       {b.role}
                                     </div>
-                                    <p className="text-[11px] text-slate-400 leading-snug">
+                                    <p className="text-[11px] text-slate-400 leading-relaxed">
                                       {b.desc}
                                     </p>
                                   </div>
                                 ))}
                               </div>
 
-                              {/* Lời giải thích tự nhiên */}
-                              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                              {/* Giải thích chi tiết */}
+                              <div className="p-3.5 rounded-xl bg-[#070b10] border border-white/5 text-xs text-slate-300 leading-relaxed">
                                 {msg.metaphorData.explanation}
-                              </p>
-
-                              {/* Hộp ghi nhớ 10 giây */}
-                              <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-start gap-3">
-                                <span className="text-base">💡</span>
-                                <div className="text-xs leading-relaxed text-emerald-200">
-                                  <span className="font-bold">GHI NHỚ NHANH TRONG 10 GIÂY: </span>
-                                  <span>{msg.metaphorData.takeaway}</span>
-                                </div>
                               </div>
 
+                              {/* Đúc kết */}
+                              <div className="flex items-start gap-2 pt-2 border-t border-white/[0.06] text-xs text-emerald-300">
+                                <span className="font-bold">ĐÚC KẾT:</span>
+                                <span className="text-slate-300 leading-relaxed">
+                                  {msg.metaphorData.takeaway}
+                                </span>
+                              </div>
                             </div>
                           )}
-
                         </div>
                       </div>
                     )}
                   </div>
                 ))}
 
-                {/* Loading indicator khi AI gõ */}
+                {/* Loading typing indicator */}
                 {isTyping && (
-                  <div className="flex items-center gap-3 text-slate-400 text-xs font-mono">
-                    <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                      <Bot className="w-3.5 h-3.5" />
+                  <div className="flex items-center gap-3 text-xs text-slate-400">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                      <Sparkles className="w-4 h-4 animate-spin" />
                     </div>
-                    <div className="flex items-center gap-1.5 bg-[#0e1622] px-3 py-2 rounded-xl border border-white/5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:0.2s]" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:0.4s]" />
-                      <span className="ml-1 text-[11px]">Đang suy nghĩ ẩn dụ gần gũi nhất...</span>
+                    <div className="flex items-center gap-1 font-mono text-emerald-400">
+                      <span>DevFolio AI đang soạn câu trả lời qua API</span>
+                      <span className="animate-pulse">...</span>
                     </div>
                   </div>
                 )}
@@ -577,26 +476,12 @@ export const AiAssistantPage: React.FC = () => {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Action Pills hỗ trợ nhập */}
-              <div className="p-3 bg-[#0a0f16] border-t border-[#1b2636] flex flex-wrap items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <button 
-                    onClick={() => setInputQuestion('Hãy giải thích thật ngắn gọn bằng 3 câu.')}
-                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#111925] border border-white/[0.08] hover:border-emerald-500/30 text-slate-400 hover:text-white text-xs transition cursor-pointer"
-                  >
-                    <Mic className="w-3 h-3 text-cyan-400" />
-                    <span>Nói bằng giọng nói</span>
-                  </button>
-
-                  <button 
-                    onClick={() => setInputQuestion('Làm sao để người không biết code tạo ra ứng dụng?')}
-                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#111925] border border-white/[0.08] hover:border-emerald-500/30 text-slate-400 hover:text-white text-xs transition cursor-pointer"
-                  >
-                    <Wand2 className="w-3 h-3 text-purple-400" />
-                    <span>Viết hộ câu hỏi</span>
-                  </button>
-
-                  <button 
+              {/* Gợi ý thêm */}
+              <div className="px-4 py-2 bg-[#0a0f18] border-t border-[#16212e] flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-mono text-slate-500">Mẹo tương tác:</span>
+                  <button
+                    type="button"
                     onClick={() => setInputQuestion('Hãy ví von câu này cho học sinh lớp 1 hiểu được không?')}
                     className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#111925] border border-white/[0.08] hover:border-emerald-500/30 text-slate-400 hover:text-white text-xs transition cursor-pointer"
                   >
@@ -617,7 +502,7 @@ export const AiAssistantPage: React.FC = () => {
                     type="text"
                     value={inputQuestion}
                     onChange={(e) => setInputQuestion(e.target.value)}
-                    placeholder="Hỏi bất cứ điều gì bạn chưa hiểu... (Ví dụ: Database là gì?, Dự án này làm được gì?)"
+                    placeholder="Hỏi bất cứ điều gì bạn chưa hiểu... (Ví dụ: Database là gì?, API hoạt động như thế nào?)"
                     className="w-full bg-[#070b10] border border-[#1b2737] rounded-xl pl-4 pr-32 py-3 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition shadow-inner"
                   />
                   <button
@@ -634,7 +519,7 @@ export const AiAssistantPage: React.FC = () => {
                 <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-500 pt-1 font-mono">
                   <div className="flex items-center gap-1.5 text-slate-400">
                     <Sparkles className="w-3 h-3 text-emerald-400" />
-                    <span>Trả lời bằng ngôn ngữ thuần Việt, tôn trọng mọi câu hỏi ban đầu</span>
+                    <span>Tích hợp AI Endpoint thực tế (POST /api/ai/ask)</span>
                   </div>
                   <span className="text-emerald-400/80">
                     [Chế độ an toàn cho người mới: Đang bật]
@@ -728,56 +613,7 @@ export const AiAssistantPage: React.FC = () => {
               </div>
             </div>
 
-            {/* 3. Box: Dự án dễ chơi thử nhất */}
-            <div className="p-5 rounded-2xl bg-[#0b1017] border border-[#1b2636] space-y-3.5">
-              <div className="flex items-center gap-2 font-bold text-xs text-white">
-                <Sparkles className="w-4 h-4 text-emerald-400" />
-                <span>Dự án dễ chơi thử nhất</span>
-              </div>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Hai sản phẩm có giao diện thân thiện, trực quan, người không biết code bấm vào là hiểu ngay cách chạy:
-              </p>
-
-              {/* Dự án 1 */}
-              <div className="p-3.5 rounded-xl bg-[#070b10] border border-[#182535] space-y-2">
-                <div className="flex items-center justify-between text-[11px] font-mono">
-                  <span className="text-slate-500">Dự án 01</span>
-                  <span className="text-emerald-400 font-semibold">Có Demo Live</span>
-                </div>
-                <div className="font-bold text-white text-xs">PulseCanvas UI Sandbox</div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Bảng vẽ kéo thả giao diện. Bạn chỉ cần dùng chuột di chuyển các ô vuông để tạo ra ứng dụng điện thoại riêng.
-                </p>
-                <a 
-                  href="#demo"
-                  className="inline-flex items-center gap-1 text-xs text-emerald-400 hover:underline font-medium pt-1"
-                >
-                  <span>Dùng thử không cần đăng ký</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-
-              {/* Dự án 2 */}
-              <div className="p-3.5 rounded-xl bg-[#070b10] border border-[#182535] space-y-2">
-                <div className="flex items-center justify-between text-[11px] font-mono">
-                  <span className="text-slate-500">Dự án 02</span>
-                  <span className="text-cyan-400 font-semibold">Trực quan hóa</span>
-                </div>
-                <div className="font-bold text-white text-xs">Solaris Data Explorer</div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Biến những con số khô khan thành vũ trụ 3D lấp lánh như xem phim khoa học viễn tưởng.
-                </p>
-                <a 
-                  href="#demo"
-                  className="inline-flex items-center gap-1 text-xs text-emerald-400 hover:underline font-medium pt-1"
-                >
-                  <span>Khám phá 3D trực quan</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-            </div>
-
-            {/* 4. Quote khích lệ */}
+            {/* 3. Quote khích lệ */}
             <div className="p-4 rounded-2xl bg-gradient-to-br from-[#0c1622] to-[#070b10] border border-[#1b2838] text-center space-y-2">
               <p className="text-xs italic text-slate-300 leading-relaxed">
                 “Không có câu hỏi nào là ngớ ngẩn. Mọi lập trình viên kỳ cựu đều từng bắt đầu từ việc không biết bấm nút nào!”
