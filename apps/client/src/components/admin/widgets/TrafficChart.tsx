@@ -33,24 +33,7 @@ export const TrafficChart: React.FC = () => {
     };
   }, []);
 
-  const chartData = hasData
-    ? [
-        { day: '10', views: 720, downloads: 410, builds: 1 },
-        { day: '11', views: 810, downloads: 460, builds: 2 },
-        { day: '12', views: 690, downloads: 380, builds: 1 },
-        { day: '13', views: 940, downloads: 520, builds: 2 },
-        { day: '14', views: 1120, downloads: 680, builds: 3 },
-        { day: '15', views: 890, downloads: 490, builds: 2 },
-        { day: '16', views: 1040, downloads: 610, builds: 2 },
-        { day: '17', views: 980, downloads: 570, builds: 2 },
-        { day: '18', views: 1450, downloads: 910, builds: 4 },
-        { day: '19', views: 1620, downloads: 1040, builds: 4 },
-        { day: '20', views: 1842, downloads: 1210, builds: 5, isPeak: true },
-        { day: '21', views: 1510, downloads: 980, builds: 3 },
-        { day: '22', views: 1420, downloads: 920, builds: 3 },
-        { day: 'Hôm nay', views: 1730, downloads: 1150, builds: 4, isToday: true },
-      ]
-    : [];
+  const chartData: { day: string; views: number; downloads: number; builds: number; isPeak?: boolean; isToday?: boolean }[] = [];
 
   const maxVal = chartData.length > 0 ? Math.max(...chartData.map((d) => d[chartMetric])) : 1;
 
@@ -102,22 +85,22 @@ export const TrafficChart: React.FC = () => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-b border-white/[0.05]">
         <div>
           <div className="text-[10px] text-slate-400 uppercase font-semibold">Ngày cao điểm</div>
-          <div className="text-base font-bold text-white mt-0.5">{hasData ? '1,842' : '0'}</div>
+          <div className="text-base font-bold text-white mt-0.5">{'0'}</div>
           <div className="text-[10px] text-emerald-400">{hasData ? '+24% vs trung bình' : 'Chưa có đỉnh tải'}</div>
         </div>
         <div>
           <div className="text-[10px] text-slate-400 uppercase font-semibold">Truy cập Desktop</div>
-          <div className="text-base font-bold text-white mt-0.5">{hasData ? '94.2%' : '0%'}</div>
+          <div className="text-base font-bold text-white mt-0.5">{'0%'}</div>
           <div className="text-[10px] text-cyan-400">{hasData ? 'Developers / Terminals' : 'Chưa ghi nhận'}</div>
         </div>
         <div>
           <div className="text-[10px] text-slate-400 uppercase font-semibold">Avg Duration</div>
-          <div className="text-base font-bold text-white mt-0.5">{hasData ? '4m 38s' : '0s'}</div>
+          <div className="text-base font-bold text-white mt-0.5">{'0s'}</div>
           <div className="text-[10px] text-slate-400">{hasData ? 'Tương tác công cụ' : 'Chưa có phiên tương tác'}</div>
         </div>
         <div>
           <div className="text-[10px] text-slate-400 uppercase font-semibold">Bounce Rate</div>
-          <div className="text-base font-bold text-white mt-0.5">{hasData ? '16.4%' : '0.0%'}</div>
+          <div className="text-base font-bold text-white mt-0.5">{'0.0%'}</div>
           <div className="text-[10px] text-emerald-400">{hasData ? '-3.1% ổn định' : 'Trạng thái ổn định'}</div>
         </div>
       </div>
