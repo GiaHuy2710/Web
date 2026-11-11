@@ -1,10 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Header,
   Footer,
   CommandPaletteModal,
   CvModal,
   AuthModal,
+  UserSubmitProjectModal,
 } from './components';
 
 import {
@@ -16,70 +17,17 @@ import {
   AdminPage,
 } from './pages';
 
-import { ProjectItem, ProjectCategory } from './types/project';
-import { ProductRegistryItem } from './components/admin/products/types';
+import { ProjectItem } from './types/project';
 import { AuthUser } from './types/auth';
 import { authApi } from './shared/api';
-
-// Chuyển đổi dữ liệu từ ProductRegistryItem sang ProjectItem để hiển thị trên Landing page
-const mapProductRegistryToProjectItem = (item: ProductRegistryItem): ProjectItem => {
-  let cat: ProjectCategory = 'Developer Tools';
-  if (item.category === 'web' || item.categoryLabel?.toLowerCase().includes('web')) {
-    cat = 'Web App';
-  } else if (item.category === 'game' || item.categoryLabel?.toLowerCase().includes('game')) {
-    cat = 'Games & Creative';
-  } else if (item.categoryLabel?.toLowerCase().includes('ai')) {
-    cat = 'AI Tools';
-  }
-
-  return {
-    id: item.slug || item.id,
-    title: item.name,
-    badge: item.indexTag || 'Active',
-    badgeType: 'breadcrumb',
-    likes: 0,
-    views: item.downloads || '0',
-    category: cat,
-    techStack: item.techStack || ['TypeScript'],
-    description: item.statusLabel ? `Phiên bản ${item.version} • ${item.categoryLabel}` : item.name,
-    image: '/images/synapse-ai.jpg',
-    demoUrl: `https://${item.slug || 'project'}.devfolio.io`,
-    githubUrl: `https://github.com/alexdev/${item.slug || 'project'}`,
-    details: {
-      longDescription: `Dự án ${item.name} (${item.version}). Phân loại: ${item.categoryLabel}. Mã gói: ${item.code}.`,
-      highlights: [
-        `Phát hành phiên bản ${item.version}`,
-        `Cấu hình môi trường Edge CDN`,
-        `Tương thích toàn hệ thống`,
-      ],
-      architecture: item.techStack?.join(', ') || 'TypeScript',
-      version: item.version,
-      stars: '0',
-    },
-  };
-};
-
-const getStoredProjects = (): ProjectItem[] => {
-  if (typeof window !== 'undefined') {
-    try {
-      const raw = localStorage.getItem('devfolio_products');
-      if (raw) {
-        const items: ProductRegistryItem[] = JSON.parse(raw);
-        if (Array.isArray(items) && items.length > 0) {
-          const active = items.filter((i) => i.status === 'active');
-          const toShow = active.length > 0 ? active : items;
-          return toShow.map(mapProductRegistryToProjectItem);
-        }
-      }
-    } catch {
-      // ignore
-    }
-  }
-  return [];
-};
+import { projectApi } from './shared/api/project.api';
 
 export const App: React.FC = () => {
-  const [projects, setProjects] = useState<ProjectItem[]>(getStoredProjects);
+  const [projects, setProjects] = useState<ProjectItem[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProjects, setTotalProjects] = useState(0);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(true);
+  const [projectsError, setProjectsError] = useState<string | null>(null);
   const [savedCount, setSavedCount] = useState<number>(0);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [selectedTech, setSelectedTech] = useState<string | null>(null);
@@ -88,25 +36,57 @@ export const App: React.FC = () => {
 
   // Đồng bộ danh sách dự án khi có thay đổi từ Admin Studio hoặc tab khác
   useEffect(() => {
-    const handleSync = () => {
-      setProjects(getStoredProjects());
-    };
-    window.addEventListener('storage', handleSync);
-    window.addEventListener('devfolio_products_updated', handleSync);
-    return () => {
-      window.removeEventListener('storage', handleSync);
-      window.removeEventListener('devfolio_products_updated', handleSync);
-    };
-  }, []);
+  let cancelled = false;
+
+  const loadProjects = async () => {
+    setIsLoadingProjects(true);
+    setProjectsError(null);
+
+    try {
+      const response = await projectApi.getProjects({
+        category: activeCategory,
+        tech: selectedTech ?? undefined,
+        sort: sortBy,
+        page: currentPage,
+        limit: 6,
+      });
+
+      if (cancelled) return;
+
+      setProjects(response.projects.map((project) => ({ ...project, image: project.image || '/images/synapse-ai.jpg', details: project.details || { longDescription: project.description || '', highlights: [], architecture: project.techStack?.join(', ') || 'N/A', version: '1.0.0', stars: String(project.likes || 0) } })));
+      setTotalPages(response.pagination.totalPages);
+      setTotalProjects(response.pagination.total);
+    } catch {
+      if (cancelled) return;
+      setProjectsError('Không thể tải danh sách dự án. Vui lòng thử lại.');
+    } finally {
+      if (!cancelled) setIsLoadingProjects(false);
+    }
+  };
+
+  void loadProjects();
+
+  return () => {
+    cancelled = true;
+  };
+  }, [activeCategory, selectedTech, sortBy, currentPage]);
 
   // Xác định view ban đầu: Mặc định luôn là 'projects' (Landing page)
   // Chỉ mở admin khi truy cập trực tiếp hash #admin hoặc query param ?view=admin
+  // Tự động dọn dẹp hash #admin từ session cũ nếu có trên trình duyệt
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#admin') {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
+
+  // Xác định view ban đầu: Mặc định luôn là 'projects' (Landing page)
+  // Chỉ mở admin khi truy cập trực tiếp đường dẫn /admin hoặc query param ?view=admin
   const getInitialView = (): 'projects' | 'project-detail' | 'ai-assistant' | 'contact' | 'docs' | 'admin' => {
     if (typeof window !== 'undefined') {
       const pathname = window.location.pathname;
       const search = window.location.search;
-      const hash = window.location.hash;
-      if (pathname.includes('/admin') || search.includes('view=admin') || hash === '#admin') {
+      if (pathname.includes('/admin') || search.includes('view=admin')) {
         return 'admin';
       }
     }
@@ -114,17 +94,26 @@ export const App: React.FC = () => {
   };
 
   const [currentView, setCurrentView] = useState<'projects' | 'project-detail' | 'ai-assistant' | 'contact' | 'docs' | 'admin'>(getInitialView);
+  const [adminTab, setAdminTab] = useState<string>('products');
+
+  const handleNavigateToAdmin = (tab: string = 'products') => {
+    setSelectedProject(null);
+    setAdminTab(tab);
+    setCurrentView('admin');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isCvOpen, setIsCvOpen] = useState<boolean>(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
 
   const handleBackToHome = () => {
     setSelectedProject(null);
     setCurrentView('projects');
-    if (typeof window !== 'undefined' && window.history.pushState) {
-      window.history.pushState(null, '', '/');
+    if (typeof window !== 'undefined' && window.history.replaceState) {
+      window.history.replaceState(null, '', '/');
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -160,42 +149,17 @@ export const App: React.FC = () => {
   }, []);
 
   // Filter & Sort Projects
-  const filteredProjects = useMemo(() => {
-    let result = [...projects];
-
-    if (activeCategory !== 'all') {
-      result = result.filter(p => p.category === activeCategory);
-    }
-
-    if (selectedTech) {
-      result = result.filter(p => 
-        p.techStack.some(t => t.toLowerCase() === selectedTech.toLowerCase())
-      );
-    }
-
-    if (sortBy === 'popular') {
-      result.sort((a, b) => b.likes - a.likes);
-    } else if (sortBy === 'name') {
-      result.sort((a, b) => a.title.localeCompare(b.title));
-    }
-
-    return result;
-  }, [projects, activeCategory, selectedTech, sortBy]);
+const filteredProjects = projects;
 
   // Handle Like Toggle
-  const handleToggleLike = (projectId: string) => {
-    setProjects(prev => prev.map(p => {
-      if (p.id === projectId) {
-        const nextLiked = !p.isLiked;
-        return {
-          ...p,
-          isLiked: nextLiked,
-          likes: nextLiked ? p.likes + 1 : p.likes - 1
-        };
-      }
-      return p;
-    }));
-    setSavedCount(prev => prev + 1);
+  const handleToggleLike = async (projectId: string) => {
+    try {
+      const result = await projectApi.toggleLike(projectId);
+      setProjects((prev) => prev.map((project) => project.id === projectId ? { ...project, likes: result.likes, isLiked: result.isLiked } : project));
+      setSavedCount((count) => count + 1);
+    } catch {
+      setProjectsError('Không thể cập nhật lượt thích. Vui lòng thử lại.');
+    }
   };
 
   const handleExploreProjects = () => {
@@ -228,12 +192,7 @@ export const App: React.FC = () => {
       setCurrentView('contact');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (sectionId === 'admin') {
-      setSelectedProject(null);
-      setCurrentView('admin');
-      if (typeof window !== 'undefined' && window.history.pushState) {
-        window.history.pushState(null, '', '/#admin');
-      }
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      handleNavigateToAdmin('products');
     } else if (sectionId === 'login') {
       setAuthTab('login');
       setIsAuthOpen(true);
@@ -249,6 +208,7 @@ export const App: React.FC = () => {
       <AdminPage 
         onBackToHome={handleBackToHome}
         currentUser={currentUser}
+        defaultTab={adminTab}
       />
     );
   }
@@ -297,6 +257,10 @@ export const App: React.FC = () => {
         <HomePage 
           projects={projects}
           filteredProjects={filteredProjects}
+          isLoading={isLoadingProjects}
+          error={projectsError}
+          totalPages={totalPages}
+          totalProjects={totalProjects}
           activeCategory={activeCategory}
           onSelectCategory={(cat) => {
             setActiveCategory(cat);
@@ -308,7 +272,7 @@ export const App: React.FC = () => {
             setCurrentPage(1);
           }}
           sortBy={sortBy}
-          onSortChange={setSortBy}
+          onSortChange={(sort) => { setSortBy(sort); setCurrentPage(1); }}
           currentPage={currentPage}
           onPageChange={setCurrentPage}
           onSelectProject={(p) => {
@@ -318,6 +282,8 @@ export const App: React.FC = () => {
           onToggleLike={handleToggleLike}
           onExploreProjects={handleExploreProjects}
           onOpenCvModal={() => setIsCvOpen(true)}
+          onOpenSubmitProjectModal={() => setIsSubmitModalOpen(true)}
+          onNavigateToAdmin={() => handleNavigateToAdmin('products')}
         />
       )}
 
@@ -341,6 +307,12 @@ export const App: React.FC = () => {
       <CvModal 
         isOpen={isCvOpen}
         onClose={() => setIsCvOpen(false)}
+      />
+
+      {/* User Submit Project Modal (Modal đóng góp dự án của người dùng) */}
+      <UserSubmitProjectModal
+        isOpen={isSubmitModalOpen}
+        onClose={() => setIsSubmitModalOpen(false)}
       />
 
       {/* Auth Modal (Login / Register) */}

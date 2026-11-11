@@ -13,6 +13,10 @@ import { ProjectItem } from '../types/project';
 export interface HomePageProps {
   projects: ProjectItem[];
   filteredProjects: ProjectItem[];
+  isLoading: boolean;
+  error: string | null;
+  totalPages: number;
+  totalProjects: number;
   activeCategory: string;
   onSelectCategory: (category: string) => void;
   selectedTech: string | null;
@@ -25,11 +29,17 @@ export interface HomePageProps {
   onToggleLike: (projectId: string) => void;
   onExploreProjects: () => void;
   onOpenCvModal: () => void;
+  onNavigateToAdmin?: () => void;
+  onOpenSubmitProjectModal?: () => void;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
   projects,
   filteredProjects,
+  isLoading,
+  error,
+  totalPages,
+  totalProjects,
   activeCategory,
   onSelectCategory,
   selectedTech,
@@ -42,14 +52,9 @@ export const HomePage: React.FC<HomePageProps> = ({
   onToggleLike,
   onExploreProjects,
   onOpenCvModal,
+  onNavigateToAdmin,
+  onOpenSubmitProjectModal,
 }) => {
-  const itemsPerPage = 6;
-  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / itemsPerPage));
-  const paginatedProjects = filteredProjects.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
   return (
     <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6">
       {/* Hero Section */}
@@ -73,7 +78,11 @@ export const HomePage: React.FC<HomePageProps> = ({
       />
 
       {/* Empty state khi chưa có dự án nào */}
-      {projects.length === 0 ? (
+      {isLoading ? (
+        <div className="py-16 text-center text-slate-400">Đang tải danh sách dự án...</div>
+      ) : error ? (
+        <div className="py-16 text-center text-red-300">{error}</div>
+      ) : projects.length === 0 && activeCategory === 'all' && !selectedTech ? (
         <div className="py-20 text-center rounded-3xl bg-[#0b101a] border border-white/[0.06] space-y-4 my-8 p-8">
           <div className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center mx-auto text-slate-400">
             <FolderGit2 className="w-7 h-7 stroke-[1.8]" />
@@ -83,16 +92,17 @@ export const HomePage: React.FC<HomePageProps> = ({
               Kho dự án hiện đang trống
             </h3>
             <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-              Hệ thống chưa ghi nhận dự án nào được đăng tải. Khi bạn đăng tải hoặc lưu bản phát hành trong trang Quản trị (Admin Studio), sản phẩm sẽ lập tức xuất hiện tại đây.
+              Hệ thống chưa ghi nhận dự án nào được công khai. Bạn có thể là người đầu tiên đóng góp công cụ hoặc sản phẩm công nghệ của mình lên cộng đồng DevFolio.
             </p>
           </div>
           <div className="pt-2">
             <button
               type="button"
               onClick={() => {
-                if (typeof window !== 'undefined') {
-                  window.location.hash = '#admin';
-                  window.location.reload();
+                if (onOpenSubmitProjectModal) {
+                  onOpenSubmitProjectModal();
+                } else if (onNavigateToAdmin) {
+                  onNavigateToAdmin();
                 }
               }}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-bold text-xs transition shadow-[0_0_20px_rgba(52,211,153,0.3)] cursor-pointer"
@@ -119,7 +129,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       ) : (
         /* Projects 3-Column Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 my-6">
-          {paginatedProjects.map((project) => (
+          {filteredProjects.map((project) => (
             <ProjectCard 
               key={project.id}
               project={project}
@@ -131,11 +141,11 @@ export const HomePage: React.FC<HomePageProps> = ({
       )}
 
       {/* Pagination Bar - Chỉ hiển thị khi có nhiều hơn 1 trang */}
-      {filteredProjects.length > itemsPerPage && (
+      {!isLoading && !error && totalProjects > 6 && (
         <Pagination 
           currentPage={currentPage}
           totalPages={totalPages}
-          totalItems={filteredProjects.length}
+          totalItems={totalProjects}
           onPageChange={onPageChange}
         />
       )}
