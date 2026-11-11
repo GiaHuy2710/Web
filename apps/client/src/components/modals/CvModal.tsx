@@ -18,18 +18,18 @@ export const CvModal: React.FC<CvModalProps> = ({ isOpen, onClose }) => {
   }>(() => {
     const user = authApi.getCurrentUser();
     return {
-      fullName: user?.fullName || 'Alex Nguyen',
-      headline: 'Full-Stack & AI Engineer',
-      email: user?.email || 'contact@devfolio.io',
-      location: 'Ho Chi Minh City / Remote',
-      bio: 'Kỹ sư phần mềm chuyên về kiến trúc phân tán, xây dựng microservices hiệu năng cao bằng Golang & Node.js, thiết kế giao diện hiện đại với React/Next.js/Tailwind, và tích hợp các mô hình Generative AI/RAG.',
-      avatarUrl: user?.avatarUrl || '/images/alex-avatar.jpg',
+      fullName: user?.fullName || 'Chưa đăng nhập',
+      headline: user?.role === 'ADMIN' ? 'Quản trị viên hệ thống' : 'Thành viên DevFolio',
+      email: user?.email || '',
+      location: '',
+      bio: 'Chưa cập nhật thông tin giới thiệu cá nhân.',
+      avatarUrl: user?.avatarUrl || '',
     };
   });
 
   useEffect(() => {
     if (!isOpen) return;
-    fetch('/api/profiles/me')
+    const currentUser = authApi.getCurrentUser(); if (!currentUser?.id) return; fetch(`/api/profiles/${currentUser.id}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.data) {
