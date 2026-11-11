@@ -11,6 +11,25 @@ export interface ProjectListResponse {
   };
 }
 
+export interface ProjectComment {
+  id: string;
+  author: string;
+  handle: string;
+  role?: string;
+  time: string;
+  content: string;
+  likes: number;
+  isLiked: boolean;
+  reply?: {
+    author: string;
+    role: string;
+    time: string;
+    content: string;
+    likes: number;
+    isLiked: boolean;
+  } | null;
+}
+
 export const projectApi = {
   /**
    * Gọi API Backend lấy danh sách dự án thật
@@ -32,6 +51,18 @@ export const projectApi = {
    */
   async getProjectById(id: string): Promise<ProjectItem> {
     const response = await apiClient.get(`/home/projects/${id}`);
+    return response.data?.data;
+  },
+
+  // Lấy các bình luận đã lưu cho một dự án.
+  async getComments(id: string): Promise<ProjectComment[]> {
+    const response = await apiClient.get(`/home/projects/${id}/comments`);
+    return response.data?.data;
+  },
+
+  // Tạo bình luận mới cho dự án.
+  async addComment(id: string, input: { author: string; handle: string; content: string }): Promise<ProjectComment> {
+    const response = await apiClient.post(`/home/projects/${id}/comments`, input);
     return response.data?.data;
   },
 

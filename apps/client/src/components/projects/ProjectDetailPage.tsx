@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Folder, 
   Calendar, 
@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { ProjectItem } from '../../types/project';
 import { authApi } from '../../shared/api/auth.api';
+import { projectApi, ProjectComment } from '../../shared/api/project.api';
 
 interface ProjectDetailPageProps {
   project: ProjectItem;
@@ -35,11 +36,14 @@ interface ProjectDetailPageProps {
 }
 
 export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({ 
-  project, 
+  project: initialProject, 
   onBack,
   onSelectProject,
   allProjects = []
 }) => {
+  const [project, setProject] = useState(initialProject);
+  const [projectLoading, setProjectLoading] = useState(true);
+  const [projectError, setProjectError] = useState<string | null>(null);
   // State quản lý tab nội dung
   const [activeContentTab, setActiveContentTab] = useState<'overview' | 'architecture' | 'docs'>('overview');
   // State quản lý tab media thumbnail
@@ -52,32 +56,34 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   const [copiedDocker, setCopiedDocker] = useState<boolean>(false);
   // State bình luận
   const [commentText, setCommentText] = useState<string>('');
-  const [commentsList, setCommentsList] = useState<{
-    id: string;
-    author: string;
-    handle: string;
-    role?: string;
-    time: string;
-    content: string;
-    likes: number;
-    isLiked: boolean;
-    reply?: {
-      author: string;
-      role: string;
-      time: string;
-      content: string;
-      likes: number;
-      isLiked: boolean;
-    } | null;
-  }[]>(() => {
-    try {
-      const raw = localStorage.getItem(`devfolio_comments_${project.id}`);
-      if (raw) return JSON.parse(raw);
-    } catch {
-      // ignore
-    }
-    return [];
-  });
+  const [commentsList, setCommentsList] = useState<ProjectComment[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(true);
+  const [commentsError, setCommentsError] = useState<string | null>(null);
+
+  // Lấy chi tiết dự án mới nhất từ backend theo ID, không phụ thuộc dữ liệu trang chủ.
+  useEffect(() => {
+    let cancelled = false;
+    setProject(initialProject);
+    setProjectLoading(true);
+    setProjectError(null);
+    projectApi.getProjectById(initialProject.id)
+      .then((data) => { if (!cancelled) setProject(data); })
+      .catch(() => { if (!cancelled) setProjectError('Không thể tải chi tiết dự án từ máy chủ.'); })
+      .finally(() => { if (!cancelled) setProjectLoading(false); });
+    return () => { cancelled = true; };
+  }, [initialProject.id]);
+
+  // Đọc danh sách bình luận của đúng dự án hiện tại từ API.
+  useEffect(() => {
+    let cancelled = false;
+    setCommentsLoading(true);
+    setCommentsError(null);
+    projectApi.getComments(project.id)
+      .then((data) => { if (!cancelled) setCommentsList(data); })
+      .catch(() => { if (!cancelled) setCommentsError('Không thể tải bình luận.'); })
+      .finally(() => { if (!cancelled) setCommentsLoading(false); });
+    return () => { cancelled = true; };
+  }, [project.id]);
 
   const handleToggleSave = () => {
     setIsSaved(prev => !prev);
@@ -96,33 +102,25 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
     setTimeout(() => setCopiedDocker(false), 2000);
   };
 
-  const handleAddComment = (e: React.FormEvent) => {
+  const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim()) return;
 
     const user = authApi.getCurrentUser();
-    const newComment = {
-      id: Date.now().toString(),
-      author: user?.fullName || 'Khách',
-      handle: user?.email ? `@${user.email.split('@')[0]}` : '@guest',
-      role: user?.role === 'admin' ? 'Tác giả' : 'Thành viên',
-      time: 'Vừa xong',
-      content: commentText.trim(),
-      likes: 0,
-      isLiked: false,
-      reply: null
-    };
-
-    const next = [newComment, ...commentsList];
-    setCommentsList(next);
-    setCommentText('');
     try {
-      localStorage.setItem(`devfolio_comments_${project.id}`, JSON.stringify(next));
+      // Gửi bình luận lên server; chỉ thêm vào giao diện sau khi lưu thành công.
+      const created = await projectApi.addComment(project.id, {
+        author: user?.fullName || 'Khách',
+        handle: user?.email ? `@${user.email.split('@')[0]}` : '@guest',
+        content: commentText.trim(),
+      });
+      setCommentsList((prev) => [created, ...prev]);
+      setCommentText('');
+      setCommentsError(null);
     } catch {
-      // ignore
+      setCommentsError('Không thể gửi bình luận. Vui lòng thử lại.');
     }
   };
-
   const handleLikeComment = (commentId: string) => {
     setCommentsList(prev => prev.map(c => {
       if (c.id === commentId) {
@@ -141,6 +139,8 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
 
   return (
     <div className="min-h-screen bg-[#070a0f] text-slate-100 font-sans pb-16">
+      {projectLoading && <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 text-xs text-slate-400">Đang tải chi tiết dự án...</div>}
+      {projectError && <div role="alert" className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 text-xs text-amber-300">{projectError}</div>}
       
       {/* Top Breadcrumb & Metadata Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
@@ -518,7 +518,11 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
 
               {/* Danh sách bình luận */}
               <div className="space-y-3 pt-2">
-                {commentsList.length === 0 ? (
+                {commentsLoading ? (
+                  <div className="py-6 text-center text-xs text-slate-400">Đang tải bình luận...</div>
+                ) : commentsError ? (
+                  <div role="alert" className="py-6 text-center text-xs text-rose-300">{commentsError}</div>
+                ) : commentsList.length === 0 ? (
                   <div className="py-8 px-4 rounded-2xl bg-[#090e15] border border-dashed border-[#16212e] text-center text-xs text-slate-400">
                     Chưa có bình luận nào cho dự án này. Hãy là người đầu tiên chia sẻ nhận xét hoặc đặt câu hỏi kỹ thuật!
                   </div>
