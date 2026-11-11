@@ -33,6 +33,12 @@ export const AdminStudioPage: React.FC<AdminStudioPageProps> = ({
 }) => {
   // Navigation active tab
   const [activeSidebarItem, setActiveSidebarItem] = useState<string>(defaultTab);
+
+  useEffect(() => {
+    if (defaultTab) {
+      setActiveSidebarItem(defaultTab);
+    }
+  }, [defaultTab]);
   const [isProductsDropdownOpen, setIsProductsDropdownOpen] = useState<boolean>(true);
 
   // Global modals and notifications
@@ -358,6 +364,15 @@ export const AdminStudioPage: React.FC<AdminStudioPageProps> = ({
         <header className="h-14 px-6 border-b border-white/[0.06] bg-[#080d16]/80 backdrop-blur-md flex items-center justify-between sticky top-0 z-30">
           {/* Breadcrumbs */}
           <div className="flex items-center gap-2 text-xs font-mono">
+            <button
+              type="button"
+              onClick={onBackToHome}
+              className="text-slate-400 hover:text-emerald-400 transition cursor-pointer font-sans"
+              title="Quay lại Landing Page"
+            >
+              Portal
+            </button>
+            <span className="text-slate-600">/</span>
             <span className="text-slate-400">workspace</span>
             <span className="text-slate-600">/</span>
             <span className="text-emerald-400 font-semibold">admin-studio</span>
@@ -380,6 +395,15 @@ export const AdminStudioPage: React.FC<AdminStudioPageProps> = ({
 
           {/* Right Header: CLI Quick Actions & User Avatar */}
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onBackToHome}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-emerald-500/10 hover:border-emerald-500/30 border border-white/[0.08] text-slate-300 hover:text-emerald-300 text-xs transition cursor-pointer font-sans"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Về trang chủ</span>
+            </button>
+
             <button
               type="button"
               onClick={() => setIsCliModalOpen(true)}
