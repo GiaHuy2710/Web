@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { homeController } from "./home.controller";
 import { validateBody } from "../../middlewares/validate.middleware";
-import { NewsletterSchema } from "./home.schema";
+import { CreateProjectCommentSchema, NewsletterSchema } from "./home.schema";
 
 const router = Router();
 
@@ -10,6 +10,13 @@ router.get("/projects", homeController.getProjects);
 
 // 2. Lấy chi tiết 1 dự án
 router.get("/projects/:id", homeController.getProjectById);
+// API đọc và tạo bình luận theo ID dự án.
+router.get("/projects/:id/comments", homeController.getProjectComments);
+router.post(
+  "/projects/:id/comments",
+  validateBody(CreateProjectCommentSchema),
+  homeController.createProjectComment
+);
 
 // 3. Thao tác Like / Thả tim dự án
 router.post("/projects/:id/like", homeController.toggleLike);
