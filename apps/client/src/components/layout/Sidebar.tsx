@@ -5,7 +5,6 @@ import {
   FileText, 
   Bot, 
   Mail, 
-  Layers, 
   Terminal,
   X
 } from 'lucide-react';
@@ -31,7 +30,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'docs', label: 'Tài liệu & Blog', icon: FileText },
     { id: 'ai-assistant', label: 'Trợ lý AI', icon: Bot },
     { id: 'contact', label: 'Liên hệ', icon: Mail },
-    { id: 'admin', label: 'Admin Studio', icon: Layers, isSpecial: true },
   ];
 
   return (
@@ -55,7 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
             <button 
               onClick={onClose} 
-              className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.06]"
+              className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.06] cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -73,15 +71,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onNavigateSection(item.id);
                     onClose();
                   }}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition ${
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition cursor-pointer ${
                     isActive 
                       ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-semibold'
-                      : item.isSpecial
-                        ? 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/25'
-                        : 'text-slate-300 hover:text-white hover:bg-white/[0.04]'
+                      : 'text-slate-300 hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-400' : item.isSpecial ? 'text-cyan-400' : 'text-slate-400'}`} />
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-400' : 'text-slate-400'}`} />
                   <span>{item.label}</span>
                 </button>
               );
