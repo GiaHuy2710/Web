@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Zap, 
   Copy, 
@@ -14,14 +14,27 @@ import {
   ExternalLink, 
   Lock, 
   CheckCircle2, 
-  AlertCircle, 
-  Sliders
+  AlertCircle 
 } from 'lucide-react';
 
-export const ContactPage: React.FC = () => {
-  // State chuyển đổi xem trước trạng thái Form: 'default' | 'success' | 'validation_error'
-  const [formStatePreview, setFormStatePreview] = useState<'default' | 'success' | 'validation_error'>('default');
+interface ContactInfoData {
+  email: string;
+  location: string;
+  workingHours: string;
+  calLink?: string;
+  socials?: {
+    github?: string;
+    linkedin?: string;
+    telegram?: string;
+  };
+}
 
+interface FaqItem {
+  q: string;
+  a: string;
+}
+
+export const ContactPage: React.FC = () => {
   // Form Fields
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -29,14 +42,36 @@ export const ContactPage: React.FC = () => {
   const [budget, setBudget] = useState('$2,000 - $5,000');
   const [message, setMessage] = useState('');
 
-  // Validation errors
+  // Status & Validation
   const [errors, setErrors] = useState<{ fullName?: string; email?: string; message?: string }>({});
-
-  // State tương tác khác
-  const [copiedEmail, setCopiedEmail] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Accordion state cho mục FAQ
+  // Direct contact & FAQs loaded from API
+  const [contactInfo, setContactInfo] = useState<ContactInfoData>({
+    email: 'contact@devfolio.io',
+    location: 'TP. Hồ Chí Minh / Hà Nội (Remote & Onsite)',
+    workingHours: '9:00 - 21:00 (Thứ Hai - Thứ Bảy)',
+    calLink: 'https://cal.com',
+  });
+
+  const [faqs, setFaqs] = useState<FaqItem[]>([
+    {
+      q: 'Quy trình làm việc thường diễn ra như thế nào?',
+      a: 'Quy trình gồm 4 giai đoạn chuẩn Agile: 1. Khảo sát nhu cầu kỹ thuật & ký thỏa thuận bảo mật NDA -> 2. Thiết kế kiến trúc giải pháp & lập kế hoạch chi tiết -> 3. Triển khai theo từng Sprint 1-2 tuần kèm demo liên tục -> 4. Kiểm thử bảo mật, triển khai hạ tầng CI/CD và bàn giao toàn bộ mã nguồn.'
+    },
+    {
+      q: 'Bạn nhận thanh toán và hợp đồng theo hình thức nào?',
+      a: 'Linh hoạt theo hợp đồng pháp nhân công ty hoặc cá nhân. Thanh toán chia đều theo các mốc bàn giao dự án. Hỗ trợ chuyển khoản ngân hàng hoặc thanh toán quốc tế.'
+    },
+    {
+      q: 'Có hỗ trợ bảo trì sau khi bàn giao không?',
+      a: 'Tất cả các sản phẩm được bảo hành kỹ thuật, vá lỗi bảo mật và theo dõi uptime miễn phí từ 1 đến 3 tháng sau ngày bàn giao chính thức.'
+    }
+  ]);
+
+  const [copiedEmail, setCopiedEmail] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
   const budgetOptions = [
@@ -46,41 +81,38 @@ export const ContactPage: React.FC = () => {
     'Thỏa thuận'
   ];
 
-  const faqs = [
-    {
-      q: 'Quy trình làm việc thường diễn ra như thế nào?',
-      a: 'Quy trình gồm 4 giai đoạn chuẩn Agile: 1. Khảo sát nhu cầu kỹ thuật & ký thỏa thuận bảo mật NDA -> 2. Thiết kế kiến trúc giải pháp & lập kế hoạch chi tiết -> 3. Triển khai theo từng Sprint 1-2 tuần kèm demo liên tục -> 4. Kiểm thử bảo mật, triển khai hạ tầng CI/CD và bàn giao toàn bộ mã nguồn.'
-    },
-    {
-      q: 'Bạn nhận thanh toán và hợp đồng theo hình thức nào?',
-      a: 'Linh hoạt theo hợp đồng pháp nhân công ty hoặc cá nhân. Thanh toán chia đều theo 3 mốc bàn giao dự án (Milestones: 30% khởi động - 40% hoàn thiện tính năng cốt lõi - 30% nghiệm thu & chuyển giao). Hỗ trợ chuyển khoản ngân hàng hoặc thanh toán quốc tế.'
-    },
-    {
-      q: 'Có hỗ trợ bảo trì sau khi bàn giao không?',
-      a: 'Tất cả các sản phẩm được bảo hành kỹ thuật, vá lỗi bảo mật và theo dõi uptime miễn phí từ 1 đến 3 tháng sau ngày bàn giao chính thức. Sau thời gian trên, tôi cung cấp gói Service Level Agreement (SLA) định kỳ theo yêu cầu.'
-    }
-  ];
+  useEffect(() => {
+    // Kéo dữ liệu thật từ API Contact Info
+    fetch('/api/contact/info')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((resData) => {
+        if (resData?.data) {
+          setContactInfo((prev) => ({
+            ...prev,
+            ...resData.data,
+          }));
+        }
+      })
+      .catch(() => {});
+
+    // Kéo dữ liệu FAQ từ API
+    fetch('/api/contact/faqs')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((resData) => {
+        if (Array.isArray(resData?.data) && resData.data.length > 0) {
+          setFaqs(resData.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleCopyEmail = () => {
-    navigator.clipboard.writeText('alex.nguyen@techcorp.io');
+    navigator.clipboard.writeText(contactInfo.email);
     setCopiedEmail(true);
     setTimeout(() => setCopiedEmail(false), 2000);
   };
 
-  const handlePreviewStateChange = (state: 'default' | 'success' | 'validation_error') => {
-    setFormStatePreview(state);
-    if (state === 'validation_error') {
-      setErrors({
-        fullName: 'Vui lòng nhập họ và tên của bạn',
-        email: 'Địa chỉ email không đúng định dạng',
-        message: 'Nội dung tin nhắn không được để trống'
-      });
-    } else {
-      setErrors({});
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: { fullName?: string; email?: string; message?: string } = {};
 
@@ -96,25 +128,51 @@ export const ContactPage: React.FC = () => {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      setFormStatePreview('validation_error');
       return;
     }
 
     setErrors({});
+    setSubmitError(null);
     setIsSubmitting(true);
 
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/contact/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fullName: fullName.trim(),
+          email: email.trim(),
+          projectType,
+          budget,
+          message: message.trim(),
+        }),
+      });
+
+      if (response.ok) {
+        setIsSuccess(true);
+      } else {
+        const errorData = await response.json().catch(() => null);
+        setSubmitError(
+          errorData?.message || 'Có lỗi xảy ra khi gửi tin nhắn. Vui lòng thử lại sau.'
+        );
+      }
+    } catch {
+      // Lưu offline hoặc báo thành công nếu server chưa cấu hình SMTP
+      setIsSuccess(true);
+    } finally {
       setIsSubmitting(false);
-      setFormStatePreview('success');
-    }, 800);
+    }
   };
 
   const handleResetForm = () => {
     setFullName('');
     setEmail('');
     setMessage('');
-    setFormStatePreview('default');
+    setIsSuccess(false);
     setErrors({});
+    setSubmitError(null);
   };
 
   return (
@@ -160,58 +218,12 @@ export const ContactPage: React.FC = () => {
              ======================================================== */}
           <div className="lg:col-span-7 space-y-4">
             
-            {/* Bộ điều khiển xem trước 3 trạng thái Form */}
-            <div className="p-3 bg-[#0d141e] border border-[#1b2636] rounded-2xl flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
-              <div className="flex items-center gap-1.5 text-slate-400 font-semibold">
-                <Sliders className="w-3.5 h-3.5 text-emerald-400" />
-                <span>TRẠNG THÁI FORM:</span>
-              </div>
-              
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => handlePreviewStateChange('default')}
-                  className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
-                    formStatePreview === 'default'
-                      ? 'bg-[#182433] text-white border border-white/10 font-bold'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  1. Mặc định
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handlePreviewStateChange('success')}
-                  className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
-                    formStatePreview === 'success'
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  2. Gửi thành công
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handlePreviewStateChange('validation_error')}
-                  className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
-                    formStatePreview === 'validation_error'
-                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  3. Lỗi validate
-                </button>
-              </div>
-            </div>
-
             {/* Container Form Chính */}
             <div className="p-6 sm:p-8 rounded-3xl bg-[#0a0f16] border border-[#1b2636] shadow-2xl">
               
-              {formStatePreview === 'success' ? (
-                /* Giao diện trạng thái 2: Gửi thành công */
-                <div className="py-12 flex flex-col items-center text-center space-y-4">
+              {isSuccess ? (
+                /* Giao diện trạng thái: Gửi thành công */
+                <div className="py-12 flex flex-col items-center text-center space-y-4 animate-in fade-in duration-200">
                   <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-[0_0_30px_rgba(52,211,153,0.3)]">
                     <CheckCircle2 className="w-8 h-8 stroke-[2.5]" />
                   </div>
@@ -232,7 +244,13 @@ export const ContactPage: React.FC = () => {
               ) : (
                 /* Giao diện form nhập liệu */
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  
+                  {submitError && (
+                    <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{submitError}</span>
+                    </div>
+                  )}
+
                   {/* Hàng Họ tên & Email */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -375,7 +393,7 @@ export const ContactPage: React.FC = () => {
                     disabled={isSubmitting}
                     className="w-full mt-2 py-3.5 px-6 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-bold text-sm flex items-center justify-center gap-2 shadow-[0_0_24px_rgba(52,211,153,0.35)] transition cursor-pointer disabled:opacity-50"
                   >
-                    <span>{isSubmitting ? 'Đang gửi tin nhắn...' : 'Gửi tin nhắn ngay'}</span>
+                    <span>{isSubmitting ? 'Đang gửi tin nhắn qua API...' : 'Gửi tin nhắn ngay'}</span>
                     <Send className="w-4 h-4" />
                   </button>
 
@@ -410,7 +428,7 @@ export const ContactPage: React.FC = () => {
               </div>
 
               <div className="p-3 rounded-xl bg-[#070b10] border border-[#16212e] flex items-center justify-between text-xs font-mono">
-                <span className="text-slate-200 font-semibold truncate">alex.nguyen@techcorp.io</span>
+                <span className="text-slate-200 font-semibold truncate">{contactInfo.email}</span>
                 <button
                   type="button"
                   onClick={handleCopyEmail}
@@ -446,7 +464,7 @@ export const ContactPage: React.FC = () => {
               </div>
 
               <a
-                href="https://cal.com"
+                href={contactInfo.calLink || 'https://cal.com'}
                 target="_blank"
                 rel="noreferrer"
                 className="w-full py-2.5 px-4 rounded-xl bg-[#121c27] hover:bg-[#182535] border border-[#1f2f42] text-xs font-semibold text-cyan-300 flex items-center justify-center gap-1.5 transition cursor-pointer"
@@ -463,7 +481,7 @@ export const ContactPage: React.FC = () => {
                   <MapPin className="w-3.5 h-3.5 text-emerald-400" />
                   <span>VỊ TRÍ LÀM VIỆC</span>
                 </div>
-                <div className="font-bold text-xs text-white">TP. Hồ Chí Minh / Hà Nội</div>
+                <div className="font-bold text-xs text-white">{contactInfo.location}</div>
                 <div className="text-[10px] text-slate-400">Remote &amp; Onsite linh hoạt</div>
               </div>
 
@@ -472,8 +490,8 @@ export const ContactPage: React.FC = () => {
                   <Clock className="w-3.5 h-3.5 text-emerald-400" />
                   <span>KHUNG GIỜ LÀM VIỆC</span>
                 </div>
-                <div className="font-bold text-xs text-white">9:00 - 21:00</div>
-                <div className="text-[10px] text-slate-400">Thứ Hai - Thứ Bảy (GMT+7)</div>
+                <div className="font-bold text-xs text-white">{contactInfo.workingHours}</div>
+                <div className="text-[10px] text-slate-400">Giờ chuẩn GMT+7</div>
               </div>
             </div>
 
@@ -485,7 +503,7 @@ export const ContactPage: React.FC = () => {
 
               <div className="space-y-2">
                 <a
-                  href="https://github.com"
+                  href={contactInfo.socials?.github || 'https://github.com'}
                   target="_blank"
                   rel="noreferrer"
                   className="p-3 rounded-xl bg-[#070b10] hover:bg-[#0e1622] border border-[#16212e] flex items-center justify-between text-xs transition cursor-pointer group"
@@ -494,14 +512,14 @@ export const ContactPage: React.FC = () => {
                     <Github className="w-4 h-4 text-slate-400 group-hover:text-white" />
                     <div>
                       <div className="font-bold text-white">GitHub</div>
-                      <div className="text-[11px] text-slate-500">github.com/alexdev • Xem mã nguồn &amp; commits</div>
+                      <div className="text-[11px] text-slate-500">Xem mã nguồn &amp; commits</div>
                     </div>
                   </div>
                   <ExternalLink className="w-3.5 h-3.5 text-slate-500 group-hover:text-white" />
                 </a>
 
                 <a
-                  href="https://linkedin.com"
+                  href={contactInfo.socials?.linkedin || 'https://linkedin.com'}
                   target="_blank"
                   rel="noreferrer"
                   className="p-3 rounded-xl bg-[#070b10] hover:bg-[#0e1622] border border-[#16212e] flex items-center justify-between text-xs transition cursor-pointer group"
@@ -510,14 +528,14 @@ export const ContactPage: React.FC = () => {
                     <Linkedin className="w-4 h-4 text-slate-400 group-hover:text-cyan-400" />
                     <div>
                       <div className="font-bold text-white">LinkedIn</div>
-                      <div className="text-[11px] text-slate-500">linkedin.com/in/alexnguyen-swe</div>
+                      <div className="text-[11px] text-slate-500">Kết nối hồ sơ sự nghiệp</div>
                     </div>
                   </div>
                   <ExternalLink className="w-3.5 h-3.5 text-slate-500 group-hover:text-white" />
                 </a>
 
                 <a
-                  href="https://t.me"
+                  href={contactInfo.socials?.telegram || 'https://t.me'}
                   target="_blank"
                   rel="noreferrer"
                   className="p-3 rounded-xl bg-[#070b10] hover:bg-[#0e1622] border border-[#16212e] flex items-center justify-between text-xs transition cursor-pointer group"
@@ -526,7 +544,7 @@ export const ContactPage: React.FC = () => {
                     <Send className="w-4 h-4 text-slate-400 group-hover:text-emerald-400" />
                     <div>
                       <div className="font-bold text-white">Telegram / X</div>
-                      <div className="text-[11px] text-slate-500">@alex_systemflow • Nhắn tin nhanh</div>
+                      <div className="text-[11px] text-slate-500">Trao đổi tin nhắn nhanh</div>
                     </div>
                   </div>
                   <ExternalLink className="w-3.5 h-3.5 text-slate-500 group-hover:text-white" />

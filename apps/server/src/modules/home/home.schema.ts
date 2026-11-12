@@ -21,3 +21,11 @@ export const NewsletterSchema = z.object({
 
 export type NewsletterInput = z.infer<typeof NewsletterSchema>;
 
+export const CreateProjectCommentSchema = z.object({
+  author: z.string().trim().min(1).max(80),
+  handle: z.string().trim().max(80).optional(),
+  content: z.string().trim().min(1).max(5000),
+});
+
+export type CreateProjectCommentInput = z.infer<typeof CreateProjectCommentSchema>;
+

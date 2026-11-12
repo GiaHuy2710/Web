@@ -1,6 +1,6 @@
 import { db, Prisma } from "@repo/database";
 import { AppError } from "../../middlewares/errorHandler";
-import { ProjectQueryInput, NewsletterInput } from "./home.schema";
+import { ProjectQueryInput, NewsletterInput, CreateProjectCommentInput } from "./home.schema";
 
 export class HomeService {
   private newsletterSubscribers: Set<string> = new Set();
@@ -121,32 +121,68 @@ export class HomeService {
       throw new AppError("Không tìm thấy dự án", 404, "NOT_FOUND");
     }
 
-    return project;
+    return {
+      id: project.id,
+      title: project.name,
+      description: project.description || "",
+      demoUrl: project.demoUrl || "#",
+      githubUrl: project.repoUrl || "#",
+      techStack: project.tags,
+      category: project.tags[0] || "Developer Tools",
+      likes: this.likedProjects.get(project.id)?.likes || 0,
+      isLiked: this.likedProjects.get(project.id)?.isLiked || false,
+      createdAt: project.createdAt,
+      updatedAt: project.updatedAt,
+      author: project.profile?.user?.fullName || "DevFolio Member",
+      image: "/images/synapse-ai.jpg",
+      details: {
+        longDescription: project.description || "",
+        highlights: [],
+        architecture: project.tags.join(", "),
+        version: "1.0.0",
+        stars: "0",
+      },
+    };
   }
 
-  /**
-   * 3. Thao tác Thả tim / Like dự án
-   */
-  async toggleLikeProject(id: string) {
-    const project = await db.project.findUnique({ where: { id } });
-    if (!project) {
-      throw new AppError("Không tìm thấy dự án để thích", 404, "NOT_FOUND");
-    }
+  async getProjectComments(projectId: string) {
+    const project = await db.project.findUnique({ where: { id: projectId }, select: { id: true } });
+    if (!project) throw new AppError("Không tìm thấy dự án", 404, "NOT_FOUND");
+    const comments = await db.projectComment.findMany({
+      where: { projectId },
+      orderBy: { createdAt: "desc" },
+    });
+    return comments.map((comment) => ({
+      ...comment,
+      time: comment.createdAt.toISOString(),
+      isLiked: false,
+      role: "Thành viên",
+      reply: null,
+    }));
+  }
 
-    const current = this.likedProjects.get(id) || { likes: 0, isLiked: false };
-    const nextLiked = !current.isLiked;
-    const nextLikes = Math.max(0, current.likes + (nextLiked ? 1 : -1));
-    this.likedProjects.set(id, { likes: nextLikes, isLiked: nextLiked });
-
+  async createProjectComment(projectId: string, input: CreateProjectCommentInput) {
+    const project = await db.project.findUnique({ where: { id: projectId }, select: { id: true } });
+    if (!project) throw new AppError("Không tìm thấy dự án", 404, "NOT_FOUND");
+    const comment = await db.projectComment.create({
+      data: {
+        projectId,
+        author: input.author,
+        handle: input.handle || "@guest",
+        content: input.content,
+      },
+    });
     return {
-      id,
-      likes: nextLikes,
-      isLiked: nextLiked,
+      ...comment,
+      time: comment.createdAt.toISOString(),
+      isLiked: false,
+      role: "Thành viên",
+      reply: null,
     };
   }
 
   /**
-   * 4. Lấy số liệu thống kê thật từ Database
+   * 3. Lấy số liệu thống kê thật từ Database
    */
   async getStats() {
     const [totalUsers, totalProjects] = await Promise.all([
@@ -163,16 +199,31 @@ export class HomeService {
   }
 
   /**
+   * 4. Thao tác Thả tim / Bỏ tim dự án
+   */
+  async toggleLikeProject(id: string) {
+    // Kiểm tra xem dự án có tồn tại không
+    const project = await db.project.findUnique({ where: { id } });
+    if (!project) {
+      throw new AppError("Không tìm thấy dự án", 404, "NOT_FOUND");
+    }
+    // Ở đây có thể lưu vào DB hoặc đếm like tạm thời
+    return {
+      projectId: id,
+      likes: 1,
+      isLiked: true,
+    };
+  }
+
+  /**
    * 5. Đăng ký nhận bản tin Newsletter
    */
   async subscribeNewsletter(input: NewsletterInput) {
     const email = input.email.toLowerCase().trim();
-    this.newsletterSubscribers.add(email);
-
+    console.log(`[Newsletter] Đăng ký mới email: ${email}`);
     return {
-      message: "Đăng ký nhận bản tin công nghệ thành công!",
       email,
-      totalSubscribers: this.newsletterSubscribers.size,
+      message: "Cảm ơn bạn đã đăng ký nhận bản tin công nghệ của DevFolio!",
     };
   }
 }

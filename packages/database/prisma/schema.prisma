@@ -96,6 +96,23 @@ model Project {
   updatedAt   DateTime @updatedAt
 
   profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  comments    ProjectComment[]
 
   @@map("projects")
+}
+
+// Bảng lưu bình luận; xóa dự án sẽ tự xóa các bình luận liên quan.
+model ProjectComment {
+  id        String   @id @default(uuid())
+  projectId String
+  author    String
+  handle    String   @default("@guest")
+  content   String
+  likes     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@map("project_comments")
 }

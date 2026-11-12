@@ -1,29 +1,51 @@
 import React from 'react';
 import { Layers, Eye, Star } from 'lucide-react';
+import { ProjectItem } from '../../types/project';
 
-export const StatsSection: React.FC = () => {
+export interface StatsSectionProps {
+  projects?: ProjectItem[];
+}
+
+export const StatsSection: React.FC<StatsSectionProps> = ({ projects = [] }) => {
+  const totalProjects = projects.length;
+
+  const totalViews = projects.reduce((acc, p) => {
+    const v = parseInt((p.views || '0').replace(/[^0-9]/g, ''), 10);
+    return acc + (isNaN(v) ? 0 : v);
+  }, 0);
+  const formattedViews =
+    totalViews >= 1000
+      ? `${(totalViews / 1000).toFixed(1)}k`
+      : `${totalViews}`;
+
+  const totalLikes = projects.reduce((acc, p) => acc + (p.likes || 0), 0);
+  const formattedLikes =
+    totalLikes >= 1000
+      ? `${(totalLikes / 1000).toFixed(1)}k`
+      : `${totalLikes}`;
+
   const stats = [
     {
       label: 'HỆ SINH THÁI',
-      value: '24+',
+      value: `${totalProjects}`,
       desc: 'Dự án đã build',
       valueColor: 'text-emerald-400',
-      icon: Layers
+      icon: Layers,
     },
     {
       label: 'LƯỢT TIẾP CẬN',
-      value: '148.2k',
+      value: formattedViews,
       desc: 'Lượt xem',
       valueColor: 'text-sky-400',
-      icon: Eye
+      icon: Eye,
     },
     {
       label: 'MÃ NGUỒN MỞ',
-      value: '12.4k',
+      value: formattedLikes,
       desc: 'Lượt sao GitHub',
       valueColor: 'text-slate-100',
-      icon: Star
-    }
+      icon: Star,
+    },
   ];
 
   return (
@@ -31,7 +53,7 @@ export const StatsSection: React.FC = () => {
       {stats.map((item, idx) => {
         const IconComponent = item.icon;
         return (
-          <div 
+          <div
             key={idx}
             className="p-5 sm:p-6 rounded-2xl bg-[#0d1320]/80 border border-white/[0.07] hover:border-white/[0.14] transition-all duration-300 group hover:-translate-y-1 shadow-lg"
           >
@@ -43,7 +65,9 @@ export const StatsSection: React.FC = () => {
             </div>
 
             <div className="flex items-baseline gap-2.5">
-              <span className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${item.valueColor}`}>
+              <span
+                className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${item.valueColor}`}
+              >
                 {item.value}
               </span>
               <span className="text-xs sm:text-sm text-slate-400 font-normal">

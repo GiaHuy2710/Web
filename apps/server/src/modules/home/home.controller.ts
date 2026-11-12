@@ -31,6 +31,24 @@ export class HomeController {
     }
   }
 
+  async getProjectComments(req: Request, res: Response, next: NextFunction) {
+    try {
+      const comments = await homeService.getProjectComments(req.params.id);
+      return res.status(200).json({ success: true, data: comments });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async createProjectComment(req: Request, res: Response, next: NextFunction) {
+    try {
+      const comment = await homeService.createProjectComment(req.params.id, req.body);
+      return res.status(201).json({ success: true, data: comment });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
   // POST /api/projects/:id/like
   async toggleLike(req: Request, res: Response, next: NextFunction) {
     try {

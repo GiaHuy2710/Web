@@ -5,14 +5,19 @@ import { AuthUser } from "../types/auth";
 export interface AdminPageProps {
   onBackToHome?: () => void;
   currentUser?: AuthUser | null;
+  defaultTab?: string;
 }
 
 export const AdminPage: React.FC<AdminPageProps> = ({
   onBackToHome,
   currentUser,
+  defaultTab = 'products',
 }) => {
-  // Giữ nguyên trạng thái và giao diện chuẩn Studio Workspace (như trên màn hình)
   return (
-    <AdminStudioPage onBackToHome={onBackToHome} currentUser={currentUser} />
+    <AdminStudioPage 
+      onBackToHome={onBackToHome} 
+      currentUser={currentUser} 
+      defaultTab={defaultTab}
+    />
   );
 };
