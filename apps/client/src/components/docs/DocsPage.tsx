@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { apiClient } from '../../shared/api';
 import { 
   Search, 
   Calendar, 
@@ -16,6 +17,7 @@ import {
   ChevronRight,
   X
 } from 'lucide-react';
+ 
 
 interface ArticleItem {
   id: string;
@@ -32,18 +34,6 @@ interface ArticleItem {
 }
 
 export const DocsPage: React.FC = () => {
-  // Articles data state (từ localStorage hoặc API)
-  const [articles, setArticles] = useState<ArticleItem[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const raw = localStorage.getItem('devfolio_docs');
-        if (raw) return JSON.parse(raw);
-      } catch {
-        // ignore
-      }
-    }
-    return [];
-  });
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -60,29 +50,36 @@ export const DocsPage: React.FC = () => {
   const [readingArticle, setReadingArticle] = useState<ArticleItem | null>(null);
 
   // Kéo dữ liệu từ API hoặc đồng bộ storage
-  useEffect(() => {
-    fetch('/api/docs')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (Array.isArray(data?.data)) {
-          setArticles(data.data);
-        }
-      })
-      .catch(() => {});
+  const [articles, setArticles] = useState<ArticleItem[]>([]);
+  const [isLoadingArticles, setIsLoadingArticles] = useState(true);
+  const [articlesError, setArticlesError] = useState<string | null>(null);
 
-    const handleSync = () => {
+  // Tải danh sách bài viết từ backend khi mở trang.
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadArticles = async () => {
+      setIsLoadingArticles(true);
+      setArticlesError(null);
+
       try {
-        const raw = localStorage.getItem('devfolio_docs');
-        if (raw) setArticles(JSON.parse(raw));
+        const response = await apiClient.get('/docs');
+        if (!cancelled) {
+          setArticles(response.data?.data ?? []);
+        }
       } catch {
-        // ignore
+        if (!cancelled) {
+          setArticlesError('Không thể tải tài liệu.');
+        }
+      } finally {
+        if (!cancelled) setIsLoadingArticles(false);
       }
     };
-    window.addEventListener('storage', handleSync);
-    window.addEventListener('devfolio_docs_updated', handleSync);
+
+    void loadArticles();
+
     return () => {
-      window.removeEventListener('storage', handleSync);
-      window.removeEventListener('devfolio_docs_updated', handleSync);
+      cancelled = true;
     };
   }, []);
 
@@ -307,7 +304,11 @@ export const DocsPage: React.FC = () => {
           </span>
         </div>
 
-        {filteredArticles.length === 0 ? (
+        {isLoadingArticles ? (
+          <div className="py-16 text-center text-slate-400">Đang tải tài liệu...</div>
+        ) : articlesError ? (
+          <div role="alert" className="py-16 text-center text-rose-300">{articlesError}</div>
+        ) : filteredArticles.length === 0 ? (
           /* Trạng thái trống sạch */
           <div className="py-20 px-4 rounded-3xl bg-[#090e15] border border-dashed border-[#1b2737] flex flex-col items-center justify-center text-center space-y-3">
             <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400">

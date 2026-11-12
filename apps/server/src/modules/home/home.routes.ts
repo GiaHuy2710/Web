@@ -1,7 +1,11 @@
 import { Router } from "express";
 import { homeController } from "./home.controller";
 import { validateBody } from "../../middlewares/validate.middleware";
-import { CreateProjectCommentSchema, NewsletterSchema } from "./home.schema";
+import {
+  CreateProjectCommentSchema,
+  NewsletterSchema,
+  ProjectSubmissionSchema,
+} from "./home.schema";
 
 const router = Router();
 
@@ -29,6 +33,12 @@ router.post(
   "/newsletter",
   validateBody(NewsletterSchema),
   homeController.subscribeNewsletter
+);
+
+router.post(
+  "/project-submissions",
+  validateBody(ProjectSubmissionSchema),
+  homeController.createProjectSubmission
 );
 
 export const homeRoutes: Router = router;

@@ -116,3 +116,22 @@ model ProjectComment {
   @@index([projectId, createdAt])
   @@map("project_comments")
 }
+
+
+model ProjectSubmission {
+  id          String   @id @default(uuid())
+  name        String
+  category    String
+  version     String
+  techStack   String[] @default([])
+  description String
+  authorName  String
+  authorEmail String?
+  demoUrl     String?
+  githubUrl   String?
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+
+  @@index([status, createdAt])
+  @@map("project_submissions")
+}

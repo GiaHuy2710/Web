@@ -17,6 +17,20 @@ export class HomeController {
     }
   }
 
+  // POST /api/home/project-submissions
+  async createProjectSubmission(req: Request, res: Response, next: NextFunction) {
+    try {
+      const submission = await homeService.createProjectSubmission(req.body);
+      return res.status(201).json({
+        success: true,
+        message: "Đã nhận dự án và đang chờ duyệt.",
+        data: submission,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
   // GET /api/projects/:id
   async getProjectById(req: Request, res: Response, next: NextFunction) {
     try {

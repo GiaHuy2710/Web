@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiClient } from '../../shared/api';
 import {
   X,
   Sparkles,
@@ -58,105 +59,51 @@ export const UserSubmitProjectModal: React.FC<UserSubmitProjectModalProps> = ({
     onClose();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) {
-      setError('Vui lòng nhập tên sản phẩm hoặc dự án.');
-      return;
-    }
-    if (!description.trim()) {
-      setError('Vui lòng nhập mô tả ngắn gọn về sản phẩm.');
-      return;
-    }
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    setIsSubmitting(true);
-    setError(null);
+  if (!name.trim()) {
+    setError('Vui lòng nhập tên dự án.');
+    return;
+  }
 
-    // Xử lý tạo slug tự động
-    const slug = name
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/[\s_-]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+  if (!description.trim()) {
+    setError('Vui lòng nhập mô tả dự án.');
+    return;
+  }
 
-    const techStack = techStackInput
-      .split(',')
-      .map((t) => t.trim())
-      .filter(Boolean);
+  setIsSubmitting(true);
+  setError(null);
 
-    let categoryLabel = 'Website & Web App';
-    let categoryIcon: ProductRegistryItem['categoryIcon'] = 'web';
-    if (category === 'cli') {
-      categoryLabel = 'Công cụ & CLI';
-      categoryIcon = 'terminal';
-    } else if (category === 'game') {
-      categoryLabel = 'Game & Creative';
-      categoryIcon = 'game';
-    }
+  const techStack = techStackInput
+    .split(',')
+    .map((tech) => tech.trim())
+    .filter(Boolean);
 
-    const newProduct: ProductRegistryItem = {
-      id: `sub_${Date.now()}`,
-      code: `PRJ-${Math.floor(1000 + Math.random() * 9000)}`,
-      indexTag: 'Pending Review',
+  try {
+    const response = await apiClient.post('/home/project-submissions', {
       name: name.trim(),
-      slug: slug || `project-${Date.now()}`,
       category,
-      categoryLabel,
-      categoryIcon,
-      techStack: techStack.length > 0 ? techStack : ['TypeScript'],
       version: version.trim() || 'v1.0.0',
-      versionType: 'stable',
-      downloads: '0',
-      subStats: `Gửi bởi: ${authorName || 'Cộng tác viên'}`,
-      status: 'pending',
-      statusLabel: 'Chờ duyệt',
-    };
+      techStack,
+      demoUrl: demoUrl.trim() || undefined,
+      githubUrl: githubUrl.trim() || undefined,
+      description: description.trim(),
+      authorName: authorName.trim() || 'Cộng tác viên',
+      authorEmail: authorEmail.trim() || undefined,
+    });
 
-    setTimeout(() => {
-      try {
-        // 1. Lưu vào danh sách sản phẩm ở trạng thái pending (Chờ duyệt)
-        const rawProducts = localStorage.getItem('devfolio_products');
-        const currentProducts: ProductRegistryItem[] = rawProducts ? JSON.parse(rawProducts) : [];
-        currentProducts.unshift(newProduct);
-        localStorage.setItem('devfolio_products', JSON.stringify(currentProducts));
+    if (onSubmitSuccess && response.data?.data) {
+      onSubmitSuccess(response.data.data);
+    }
 
-        // 2. Ghi nhận nhật ký audit log cho ban quản trị
-        try {
-          const rawAudit = localStorage.getItem('devfolio_audit_logs');
-          const currentAudit = rawAudit ? JSON.parse(rawAudit) : [];
-          currentAudit.unshift({
-            id: `audit_${Date.now()}`,
-            timestamp: new Date().toISOString(),
-            timeFormatted: 'Vừa xong',
-            actor: authorName ? `${authorName} (Đóng góp)` : 'Người dùng vãng lai',
-            action: `Gửi dự án mới chờ duyệt: ${newProduct.name}`,
-            category: 'submission',
-            severity: 'info',
-            details: `Phân loại: ${categoryLabel} • Phiên bản: ${newProduct.version} • Email: ${authorEmail || 'Chưa cung cấp'}`,
-          });
-          localStorage.setItem('devfolio_audit_logs', JSON.stringify(currentAudit));
-        } catch {
-          // ignore
-        }
-
-        // Phát sự kiện đồng bộ
-        window.dispatchEvent(new Event('devfolio_products_updated'));
-        window.dispatchEvent(new Event('devfolio_audit_updated'));
-
-        if (onSubmitSuccess) {
-          onSubmitSuccess(newProduct);
-        }
-
-        setIsSubmitting(false);
-        setIsSuccess(true);
-      } catch (err) {
-        console.error(err);
-        setIsSubmitting(false);
-        setError('Có lỗi khi lưu dữ liệu. Vui lòng thử lại!');
-      }
-    }, 600);
-  };
+    setIsSuccess(true);
+  } catch {
+    setError('Không thể gửi dự án. Vui lòng thử lại.');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">

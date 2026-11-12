@@ -1,7 +1,11 @@
 import { db, Prisma } from "@repo/database";
 import { AppError } from "../../middlewares/errorHandler";
-import { ProjectQueryInput, NewsletterInput, CreateProjectCommentInput } from "./home.schema";
-
+import {
+  ProjectQueryInput,
+  NewsletterInput,
+  CreateProjectCommentInput,
+  ProjectSubmissionInput,
+} from "./home.schema";
 export class HomeService {
   private newsletterSubscribers: Set<string> = new Set();
   private likedProjects: Map<string, { likes: number; isLiked: boolean }> = new Map();
@@ -178,6 +182,23 @@ export class HomeService {
       isLiked: false,
       role: "Thành viên",
       reply: null,
+    };
+  }
+
+  async createProjectSubmission(input: ProjectSubmissionInput) {
+    const submission = await db.projectSubmission.create({
+      data: {
+        ...input,
+        status: "pending",
+      },
+    });
+
+    // Trả metadata cho frontend, không trả email liên hệ.
+    return {
+      id: submission.id,
+      name: submission.name,
+      status: submission.status,
+      createdAt: submission.createdAt,
     };
   }
 

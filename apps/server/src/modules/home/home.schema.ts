@@ -29,3 +29,16 @@ export const CreateProjectCommentSchema = z.object({
 
 export type CreateProjectCommentInput = z.infer<typeof CreateProjectCommentSchema>;
 
+export const ProjectSubmissionSchema = z.object({
+  name: z.string().trim().min(1).max(150),
+  category: z.enum(["web", "cli", "game"]),
+  version: z.string().trim().min(1).max(40),
+  techStack: z.array(z.string().trim().min(1)).max(30),
+  description: z.string().trim().min(1).max(5000),
+  authorName: z.string().trim().min(1).max(100),
+  authorEmail: z.string().email().optional(),
+  demoUrl: z.string().url().optional(),
+  githubUrl: z.string().url().optional(),
+});
+
+export type ProjectSubmissionInput = z.infer<typeof ProjectSubmissionSchema>;
